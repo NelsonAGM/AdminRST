@@ -357,6 +357,10 @@ export class MemStorage implements IStorage {
     const notes = insertServiceOrder.notes ?? null;
     const materialsUsed = insertServiceOrder.materialsUsed ?? null;
     const expectedDeliveryDate = insertServiceOrder.expectedDeliveryDate ?? null;
+    const clientSignature = insertServiceOrder.clientSignature ?? null;
+    const photos = insertServiceOrder.photos ?? [];
+    const clientApproval = insertServiceOrder.clientApproval ?? false;
+    const clientApprovalDate = insertServiceOrder.clientApprovalDate ?? null;
     
     const serviceOrder: ServiceOrder = { 
       ...insertServiceOrder, 
@@ -365,14 +369,14 @@ export class MemStorage implements IStorage {
       notes,
       materialsUsed,
       expectedDeliveryDate,
+      clientSignature,
+      photos,
+      clientApproval,
+      clientApprovalDate,
       id, 
       orderNumber,
       requestDate: new Date(),
-      completionDate: null,
-      clientSignature: null,
-      photos: [],
-      clientApproval: false,
-      clientApprovalDate: null
+      completionDate: null
     };
     this.serviceOrdersData.set(id, serviceOrder);
     return serviceOrder;
