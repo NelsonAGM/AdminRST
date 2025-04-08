@@ -119,12 +119,18 @@ export const insertServiceOrderSchema = createInsertSchema(serviceOrders).omit({
   orderNumber: true, 
   completionDate: true,
   requestDate: true
+}).extend({
+  photos: z.array(z.string()).optional(),
+  clientSignature: z.string().optional()
 });
 
 export const updateServiceOrderSchema = createInsertSchema(serviceOrders).omit({ 
   id: true, 
   orderNumber: true,
   requestDate: true 
+}).extend({
+  photos: z.array(z.string()).optional(),
+  clientSignature: z.string().optional()
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ 
