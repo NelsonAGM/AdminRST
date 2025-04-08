@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  body * {
+    visibility: hidden;
+  }
+  
+  .DialogContent,
+  .DialogContent * {
+    visibility: visible;
+  }
+  
+  .DialogContent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    box-shadow: none;
+    transform: none !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

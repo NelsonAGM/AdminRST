@@ -50,11 +50,14 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { SignaturePad } from "@/components/ui/signature-pad";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -332,6 +335,10 @@ export default function OrdersPage() {
       notes: data.notes,
       materialsUsed: data.materialsUsed,
       expectedDeliveryDate: data.expectedDeliveryDate,
+      clientSignature: data.clientSignature,
+      photos: data.photos,
+      clientApproval: data.clientApproval,
+      clientApprovalDate: data.clientApprovalDate,
     };
     
     if (orderToEdit) {
@@ -719,6 +726,49 @@ export default function OrdersPage() {
                   )}
                 />
                 
+                <FormField
+                  control={form.control}
+                  name="photos"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fotografías</FormLabel>
+                      <FormControl>
+                        <ImageUpload 
+                          value={field.value || []} 
+                          onChange={field.onChange}
+                          maxImages={5}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Sube hasta 5 imágenes del equipo o problema
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="clientSignature"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Firma del Cliente</FormLabel>
+                      <FormControl>
+                        <SignaturePad 
+                          value={field.value || ""} 
+                          onChange={field.onChange}
+                          width={350}
+                          height={150}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Solicite al cliente que firme para aprobar el servicio
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <div className="flex justify-end space-x-2">
                   <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
@@ -761,9 +811,17 @@ export default function OrdersPage() {
       
       {/* Order details dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl DialogContent">
+          <DialogHeader className="flex justify-between items-center">
             <DialogTitle>Detalles de la Orden #{selectedOrder?.orderNumber}</DialogTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.print()}
+              className="print:hidden"
+            >
+              <Printer className="h-4 w-4 mr-2" /> Imprimir
+            </Button>
           </DialogHeader>
           
           {selectedOrder && (
@@ -811,9 +869,31 @@ export default function OrdersPage() {
                   <h3 className="text-sm font-medium text-muted-foreground">Materiales Utilizados</h3>
                   <p className="text-lg whitespace-pre-line">{selectedOrder.materialsUsed || "Sin materiales registrados"}</p>
                 </div>
+                
+                {selectedOrder.photos && selectedOrder.photos.length > 0 && (
+                  <div className="col-span-2">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Fotografías</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {selectedOrder.photos.map((photo, index) => (
+                        <div key={index} className="border rounded-md overflow-hidden">
+                          <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-auto" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedOrder.clientSignature && (
+                  <div className="col-span-2">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Firma del Cliente</h3>
+                    <div className="border rounded-md p-2 bg-white max-w-md">
+                      <img src={selectedOrder.clientSignature} alt="Firma del cliente" className="w-full h-auto" />
+                    </div>
+                  </div>
+                )}
               </div>
               
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 print:hidden">
                 <h3 className="font-medium mb-3">Actualizar Estado</h3>
                 <Form {...statusForm}>
                   <form onSubmit={statusForm.handleSubmit(onStatusSubmit)} className="space-y-4">
