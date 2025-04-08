@@ -388,13 +388,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convertimos los valores de photo a string si no lo son
       if (orderData.photos && Array.isArray(orderData.photos)) {
-        orderData.photos = orderData.photos.map(p => String(p));
+        orderData.photos = orderData.photos.map((p: any) => String(p));
       }
       
       // Ensure clientSignature is a string if present
       if (orderData.clientSignature && typeof orderData.clientSignature !== 'string') {
         orderData.clientSignature = String(orderData.clientSignature);
       }
+      
+      // Procesamos las fechas
+      if (orderData.expectedDeliveryDate && typeof orderData.expectedDeliveryDate === 'string') {
+        orderData.expectedDeliveryDate = new Date(orderData.expectedDeliveryDate);
+      }
+      
+      if (orderData.completionDate && typeof orderData.completionDate === 'string') {
+        orderData.completionDate = new Date(orderData.completionDate);
+      }
+      
+      if (orderData.clientApprovalDate && typeof orderData.clientApprovalDate === 'string') {
+        orderData.clientApprovalDate = new Date(orderData.clientApprovalDate);
+      }
+      
+      console.log("Datos procesados:", JSON.stringify(orderData, (key, value) => {
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        return value;
+      }));
       
       const parseResult = insertServiceOrderSchema.safeParse(orderData);
       if (!parseResult.success) {
@@ -496,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convertimos los valores de photo a string si no lo son
       if (orderData.photos && Array.isArray(orderData.photos)) {
-        orderData.photos = orderData.photos.map(p => String(p));
+        orderData.photos = orderData.photos.map((p: any) => String(p));
       }
       
       // Ensure clientSignature is a string if present
@@ -504,7 +524,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderData.clientSignature = String(orderData.clientSignature);
       }
       
-      console.log("Actualizando orden de servicio:", JSON.stringify(orderData));
+      // Procesamos las fechas
+      if (orderData.expectedDeliveryDate && typeof orderData.expectedDeliveryDate === 'string') {
+        orderData.expectedDeliveryDate = new Date(orderData.expectedDeliveryDate);
+      }
+      
+      if (orderData.completionDate && typeof orderData.completionDate === 'string') {
+        orderData.completionDate = new Date(orderData.completionDate);
+      }
+      
+      if (orderData.clientApprovalDate && typeof orderData.clientApprovalDate === 'string') {
+        orderData.clientApprovalDate = new Date(orderData.clientApprovalDate);
+      }
+      
+      if (orderData.requestDate && typeof orderData.requestDate === 'string') {
+        orderData.requestDate = new Date(orderData.requestDate);
+      }
+      
+      console.log("Actualizando orden de servicio:", JSON.stringify(orderData, (key, value) => {
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        return value;
+      }));
       
       const parseResult = updateServiceOrderSchema.safeParse(orderData);
       if (!parseResult.success) {
