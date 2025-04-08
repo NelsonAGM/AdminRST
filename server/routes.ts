@@ -376,8 +376,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Recibiendo datos de orden de servicio:", JSON.stringify(req.body));
       
-      const parseResult = insertServiceOrderSchema.safeParse(req.body);
+      // Aseguramos que photos es un array si existe
+      let orderData = { ...req.body };
+      if (orderData.photos && !Array.isArray(orderData.photos)) {
+        if (typeof orderData.photos === 'string') {
+          orderData.photos = [orderData.photos];
+        } else {
+          orderData.photos = [];
+        }
+      }
+      
+      // Convertimos los valores de photo a string si no lo son
+      if (orderData.photos && Array.isArray(orderData.photos)) {
+        orderData.photos = orderData.photos.map(p => String(p));
+      }
+      
+      // Ensure clientSignature is a string if present
+      if (orderData.clientSignature && typeof orderData.clientSignature !== 'string') {
+        orderData.clientSignature = String(orderData.clientSignature);
+      }
+      
+      const parseResult = insertServiceOrderSchema.safeParse(orderData);
       if (!parseResult.success) {
+        console.error("Error de validación:", JSON.stringify(parseResult.error.errors));
         return res.status(400).json({ 
           message: "Datos inválidos", 
           error: parseResult.error.errors 
@@ -462,8 +483,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/service-orders/:id", ensureAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = updateServiceOrderSchema.parse(req.body);
       
+      // Aseguramos que photos es un array si existe
+      let orderData = { ...req.body };
+      if (orderData.photos && !Array.isArray(orderData.photos)) {
+        if (typeof orderData.photos === 'string') {
+          orderData.photos = [orderData.photos];
+        } else {
+          orderData.photos = [];
+        }
+      }
+      
+      // Convertimos los valores de photo a string si no lo son
+      if (orderData.photos && Array.isArray(orderData.photos)) {
+        orderData.photos = orderData.photos.map(p => String(p));
+      }
+      
+      // Ensure clientSignature is a string if present
+      if (orderData.clientSignature && typeof orderData.clientSignature !== 'string') {
+        orderData.clientSignature = String(orderData.clientSignature);
+      }
+      
+      console.log("Actualizando orden de servicio:", JSON.stringify(orderData));
+      
+      const parseResult = updateServiceOrderSchema.safeParse(orderData);
+      if (!parseResult.success) {
+        console.error("Error de validación en actualización:", JSON.stringify(parseResult.error.errors));
+        return res.status(400).json({ 
+          message: "Datos inválidos", 
+          error: parseResult.error.errors 
+        });
+      }
+      
+      const validatedData = parseResult.data;
       const updatedOrder = await storage.updateServiceOrder(id, validatedData);
       
       if (!updatedOrder) {
@@ -472,7 +524,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(updatedOrder);
     } catch (error) {
-      res.status(400).json({ message: "Datos inválidos", error });
+      console.error("Error al actualizar orden de servicio:", error);
+      res.status(400).json({ message: "Datos inválidos", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
