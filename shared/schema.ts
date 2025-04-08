@@ -4,7 +4,14 @@ import { z } from "zod";
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'technician', 'user']);
-export const orderStatusEnum = pgEnum('order_status', ['pending', 'in_progress', 'completed', 'cancelled']);
+export const orderStatusEnum = pgEnum('order_status', [
+  'pending', 
+  'waiting_approval', 
+  'approved', 
+  'in_progress', 
+  'completed', 
+  'cancelled'
+]);
 export const technicianStatusEnum = pgEnum('technician_status', ['available', 'in_service', 'unavailable']);
 export const equipmentTypeEnum = pgEnum('equipment_type', ['desktop', 'laptop', 'server', 'printer', 'network', 'other']);
 
@@ -61,8 +68,14 @@ export const serviceOrders = pgTable("service_orders", {
   description: text("description").notNull(),
   status: orderStatusEnum("status").notNull().default('pending'),
   requestDate: timestamp("request_date").defaultNow().notNull(),
+  expectedDeliveryDate: timestamp("expected_delivery_date"),
   completionDate: timestamp("completion_date"),
   notes: text("notes"),
+  materialsUsed: text("materials_used"),
+  clientSignature: text("client_signature"),
+  photos: text("photos").array(),
+  clientApproval: boolean("client_approval").default(false),
+  clientApprovalDate: timestamp("client_approval_date"),
 });
 
 // Company Settings table
@@ -105,7 +118,7 @@ export const insertServiceOrderSchema = createInsertSchema(serviceOrders).omit({
   id: true, 
   orderNumber: true, 
   completionDate: true,
-  requestDate: true 
+  requestDate: true
 });
 
 export const updateServiceOrderSchema = createInsertSchema(serviceOrders).omit({ 

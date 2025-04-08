@@ -355,16 +355,24 @@ export class MemStorage implements IStorage {
     const status = insertServiceOrder.status || "pending";
     const technicianId = insertServiceOrder.technicianId ?? null;
     const notes = insertServiceOrder.notes ?? null;
+    const materialsUsed = insertServiceOrder.materialsUsed ?? null;
+    const expectedDeliveryDate = insertServiceOrder.expectedDeliveryDate ?? null;
     
     const serviceOrder: ServiceOrder = { 
       ...insertServiceOrder, 
       status,
       technicianId,
       notes,
+      materialsUsed,
+      expectedDeliveryDate,
       id, 
       orderNumber,
       requestDate: new Date(),
-      completionDate: null 
+      completionDate: null,
+      clientSignature: null,
+      photos: [],
+      clientApproval: false,
+      clientApprovalDate: null
     };
     this.serviceOrdersData.set(id, serviceOrder);
     return serviceOrder;

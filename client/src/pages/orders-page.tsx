@@ -3,6 +3,17 @@ import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { 
   ServiceOrder, 
   InsertServiceOrder, 
@@ -13,8 +24,19 @@ import {
   UpdateServiceOrder, 
   updateServiceOrderSchema 
 } from "@shared/schema";
+import { extendedServiceOrderSchema, ExtendedServiceOrder } from "@/schema/service-order";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Eye, CheckCircle } from "lucide-react";
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  CheckCircle, 
+  Calendar, 
+  Upload, 
+  Printer,
+  Wrench
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -33,9 +55,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,8 +91,8 @@ export default function OrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   
   // Form for adding/editing service orders
-  const form = useForm<z.infer<typeof insertServiceOrderSchema>>({
-    resolver: zodResolver(insertServiceOrderSchema),
+  const form = useForm<ExtendedServiceOrder>({
+    resolver: zodResolver(extendedServiceOrderSchema),
     defaultValues: {
       clientId: 0,
       equipmentId: 0,
@@ -81,6 +100,12 @@ export default function OrdersPage() {
       description: "",
       status: "pending",
       notes: "",
+      materialsUsed: "",
+      expectedDeliveryDate: null,
+      clientSignature: "",
+      photos: [],
+      clientApproval: false,
+      clientApprovalDate: null,
     },
   });
   
@@ -105,6 +130,12 @@ export default function OrdersPage() {
       description: "",
       status: "pending",
       notes: "",
+      materialsUsed: "",
+      expectedDeliveryDate: null,
+      clientSignature: "",
+      photos: [],
+      clientApproval: false,
+      clientApprovalDate: null,
     });
   };
   
@@ -118,6 +149,12 @@ export default function OrdersPage() {
       description: order.description,
       status: order.status,
       notes: order.notes || "",
+      materialsUsed: order.materialsUsed || "",
+      expectedDeliveryDate: order.expectedDeliveryDate ? new Date(order.expectedDeliveryDate) : null,
+      clientSignature: order.clientSignature || "",
+      photos: order.photos || [],
+      clientApproval: order.clientApproval || false,
+      clientApprovalDate: order.clientApprovalDate ? new Date(order.clientApprovalDate) : null,
     });
   };
   
@@ -273,11 +310,23 @@ export default function OrdersPage() {
   });
   
   // Handle form submission for creating/updating orders
-  const onSubmit = (data: z.infer<typeof insertServiceOrderSchema>) => {
+  const onSubmit = (data: ExtendedServiceOrder) => {
+    // Convertimos el ExtendedServiceOrder a InsertServiceOrder para la mutación
+    const insertData = {
+      clientId: data.clientId,
+      equipmentId: data.equipmentId,
+      technicianId: data.technicianId,
+      description: data.description,
+      status: data.status,
+      notes: data.notes,
+      materialsUsed: data.materialsUsed,
+      expectedDeliveryDate: data.expectedDeliveryDate,
+    } as InsertServiceOrder;
+    
     if (orderToEdit) {
-      updateMutation.mutate({ id: orderToEdit.id, data });
+      updateMutation.mutate({ id: orderToEdit.id, data: insertData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(insertData);
     }
   };
   
@@ -336,22 +385,22 @@ export default function OrdersPage() {
   const columns = [
     {
       header: "Nº de Orden",
-      accessorKey: "orderNumber",
+      accessorKey: "orderNumber" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => <span className="font-medium">{row.orderNumber}</span>,
     },
     {
       header: "Cliente",
-      accessorKey: "clientId",
+      accessorKey: "clientId" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => getClientName(row.clientId),
     },
     {
       header: "Equipo",
-      accessorKey: "equipmentId",
+      accessorKey: "equipmentId" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => getEquipmentName(row.equipmentId),
     },
     {
       header: "Descripción",
-      accessorKey: "description",
+      accessorKey: "description" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => (
         <div className="max-w-xs truncate" title={row.description}>
           {row.description}
@@ -360,7 +409,7 @@ export default function OrdersPage() {
     },
     {
       header: "Estado",
-      accessorKey: "status",
+      accessorKey: "status" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => {
         const status = getStatusDisplay(row.status);
         return (
@@ -372,12 +421,12 @@ export default function OrdersPage() {
     },
     {
       header: "Técnico",
-      accessorKey: "technicianId",
+      accessorKey: "technicianId" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => getTechnicianName(row.technicianId),
     },
     {
       header: "Acciones",
-      accessorKey: "id",
+      accessorKey: "id" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => (
         <div className="flex items-center space-x-2">
           <Button
@@ -585,12 +634,13 @@ export default function OrdersPage() {
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Notas Adicionales</FormLabel>
+                      <FormLabel>Notas</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Notas sobre la orden de servicio"
-                          rows={2}
+                          placeholder="Notas adicionales sobre la orden"
+                          rows={3}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -598,98 +648,161 @@ export default function OrdersPage() {
                   )}
                 />
                 
-                <DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="materialsUsed"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Materiales Utilizados</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          placeholder="Lista de materiales y repuestos utilizados"
+                          rows={3}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="expectedDeliveryDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha Estimada de Entrega</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: es })
+                              ) : (
+                                <span>Seleccionar fecha</span>
+                              )}
+                              <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value || undefined}
+                            onSelect={field.onChange}
+                            disabled={(date: Date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end space-x-2">
                   <DialogClose asChild>
-                    <Button variant="outline" type="button">
-                      Cancelar
-                    </Button>
+                    <Button variant="outline">Cancelar</Button>
                   </DialogClose>
-                  <Button
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                  >
-                    {orderToEdit ? "Actualizar" : "Crear Orden"}
+                  <Button type="submit">
+                    {orderToEdit ? "Actualizar" : "Crear"} Orden
                   </Button>
-                </DialogFooter>
+                </div>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
       </div>
       
-      <Tabs defaultValue="all" onValueChange={setSelectedStatus} value={selectedStatus} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="pending">Pendientes</TabsTrigger>
-          <TabsTrigger value="in_progress">En Proceso</TabsTrigger>
-          <TabsTrigger value="completed">Completadas</TabsTrigger>
-          <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Filter by status */}
+      <div className="mb-6">
+        <Tabs 
+          defaultValue="all" 
+          value={selectedStatus}
+          onValueChange={setSelectedStatus} 
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-5">
+            <TabsTrigger value="all">Todas</TabsTrigger>
+            <TabsTrigger value="pending">Pendientes</TabsTrigger>
+            <TabsTrigger value="in_progress">En Proceso</TabsTrigger>
+            <TabsTrigger value="completed">Completadas</TabsTrigger>
+            <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       
-      <DataTable data={orders || []} columns={columns} loading={isLoading} />
+      <DataTable 
+        columns={columns} 
+        data={orders || []} 
+        isLoading={isLoading}
+        searchColumn="orderNumber"
+        searchPlaceholder="Buscar por número de orden..."
+      />
       
-      {/* Order Details Dialog */}
+      {/* Order details dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>
-              Orden de Servicio: {selectedOrder?.orderNumber}
-            </DialogTitle>
+            <DialogTitle>Detalles de la Orden #{selectedOrder?.orderNumber}</DialogTitle>
           </DialogHeader>
           
           {selectedOrder && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-medium mb-2">Información del Cliente</h3>
-                  <div className="space-y-1">
-                    <p>
-                      <span className="text-muted-foreground">Cliente:</span>{" "}
-                      <span className="font-medium">{getClientName(selectedOrder.clientId)}</span>
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Equipo:</span>{" "}
-                      <span>{getEquipmentName(selectedOrder.equipmentId)}</span>
-                    </p>
-                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Cliente</h3>
+                  <p className="text-lg">{getClientName(selectedOrder.clientId)}</p>
                 </div>
-                
                 <div>
-                  <h3 className="font-medium mb-2">Información del Servicio</h3>
-                  <div className="space-y-1">
-                    <p>
-                      <span className="text-muted-foreground">Fecha de Solicitud:</span>{" "}
-                      <span>{new Date(selectedOrder.requestDate).toLocaleDateString()}</span>
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Estado:</span>{" "}
-                      <Badge variant="outline" className={getStatusDisplay(selectedOrder.status).className}>
-                        {getStatusDisplay(selectedOrder.status).label}
-                      </Badge>
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Técnico:</span>{" "}
-                      <span>{getTechnicianName(selectedOrder.technicianId)}</span>
-                    </p>
-                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Equipo</h3>
+                  <p className="text-lg">{getEquipmentName(selectedOrder.equipmentId)}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Estado</h3>
+                  <Badge variant="outline" className={getStatusDisplay(selectedOrder.status).className}>
+                    {getStatusDisplay(selectedOrder.status).label}
+                  </Badge>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Técnico</h3>
+                  <p className="text-lg">{getTechnicianName(selectedOrder.technicianId)}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Fecha de Solicitud</h3>
+                  <p className="text-lg">{format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Fecha Estimada de Entrega</h3>
+                  <p className="text-lg">
+                    {selectedOrder.expectedDeliveryDate
+                      ? format(new Date(selectedOrder.expectedDeliveryDate), "PPP", { locale: es })
+                      : "No especificada"}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Descripción</h3>
+                  <p className="text-lg">{selectedOrder.description}</p>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Notas</h3>
+                  <p className="text-lg">{selectedOrder.notes || "Sin notas"}</p>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Materiales Utilizados</h3>
+                  <p className="text-lg whitespace-pre-line">{selectedOrder.materialsUsed || "Sin materiales registrados"}</p>
                 </div>
               </div>
               
-              <div>
-                <h3 className="font-medium mb-2">Descripción del Servicio</h3>
-                <p className="p-3 bg-muted rounded-md">{selectedOrder.description}</p>
-              </div>
-              
-              {selectedOrder.notes && (
-                <div>
-                  <h3 className="font-medium mb-2">Notas Adicionales</h3>
-                  <p className="p-3 bg-muted rounded-md">{selectedOrder.notes}</p>
-                </div>
-              )}
-              
-              <div className="pt-4 border-t">
-                <h3 className="font-medium mb-4">Actualizar Estado</h3>
+              <div className="border-t pt-4">
+                <h3 className="font-medium mb-3">Actualizar Estado</h3>
                 <Form {...statusForm}>
                   <form onSubmit={statusForm.handleSubmit(onStatusSubmit)} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -759,8 +872,9 @@ export default function OrdersPage() {
                           <FormControl>
                             <Textarea 
                               {...field} 
-                              placeholder="Notas sobre el servicio realizado o cambios en el estado"
+                              placeholder="Notas adicionales sobre la orden"
                               rows={3}
+                              value={field.value || ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -770,25 +884,10 @@ export default function OrdersPage() {
                     
                     <div className="flex justify-end space-x-2">
                       <DialogClose asChild>
-                        <Button variant="outline" type="button">
-                          Cerrar
-                        </Button>
+                        <Button variant="outline">Cerrar</Button>
                       </DialogClose>
-                      <Button
-                        type="submit"
-                        disabled={updateStatusMutation.isPending}
-                        className={cn(
-                          statusForm.watch("status") === "completed" && "bg-green-600 hover:bg-green-700"
-                        )}
-                      >
-                        {updateStatusMutation.isPending ? "Actualizando..." : (
-                          <>
-                            {statusForm.watch("status") === "completed" && (
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                            )}
-                            Actualizar Estado
-                          </>
-                        )}
+                      <Button type="submit">
+                        Actualizar Estado
                       </Button>
                     </div>
                   </form>
@@ -799,22 +898,21 @@ export default function OrdersPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
+      {/* Delete confirmation */}
       <AlertDialog open={!!orderToDelete} onOpenChange={(open) => !open && setOrderToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará permanentemente la orden de servicio{" "}
-              <span className="font-semibold">{orderToDelete?.orderNumber}</span>.
+              Esta acción eliminará permanentemente la orden de servicio #{orderToDelete?.orderNumber}.
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction 
               onClick={() => orderToDelete && deleteMutation.mutate(orderToDelete.id)}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-600 hover:bg-red-700"
             >
               Eliminar
             </AlertDialogAction>
