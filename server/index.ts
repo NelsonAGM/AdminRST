@@ -56,9 +56,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use port 3000 as an alternative since port 5000 is already in use
+  // Use the port specified in the environment or default to 5000
   // this serves both the API and the client.
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 5000;
   server.listen({
     port,
     host: "0.0.0.0",
