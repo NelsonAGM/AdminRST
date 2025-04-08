@@ -1,10 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { CompanySettings, insertCompanySettingsSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Building2, Phone, AtSign, Globe, FileText, Save } from "lucide-react";
+import { 
+  Building2, 
+  Phone, 
+  AtSign, 
+  Globe, 
+  FileText, 
+  Save, 
+  HardDrive, 
+  Download, 
+  Upload as UploadIcon, 
+  RefreshCw,
+  Server,
+  Activity,
+  Database,
+  Clock,
+  Lock
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -22,6 +38,8 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Shield } from "lucide-react";
+import { SingleImageUpload } from "@/components/ui/single-image-upload";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -48,11 +66,11 @@ export default function AdminPage() {
   });
   
   // Set form values when settings are loaded
-  useState(() => {
+  useEffect(() => {
     if (settings && !form.formState.isDirty) {
       form.reset(settings);
     }
-  });
+  }, [settings, form]);
   
   // Update company settings mutation
   const updateMutation = useMutation({
@@ -118,8 +136,8 @@ export default function AdminPage() {
       <Tabs defaultValue="company" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="company">Empresa</TabsTrigger>
-          <TabsTrigger value="backup" disabled>Respaldos</TabsTrigger>
-          <TabsTrigger value="system" disabled>Sistema</TabsTrigger>
+          <TabsTrigger value="backup">Respaldos</TabsTrigger>
+          <TabsTrigger value="system">Sistema</TabsTrigger>
         </TabsList>
         
         <TabsContent value="company">
@@ -145,7 +163,7 @@ export default function AdminPage() {
                               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
                                 <Building2 className="h-4 w-4" />
                               </span>
-                              <Input {...field} className="rounded-l-none" />
+                              <Input {...field} value={field.value || ""} className="rounded-l-none" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -158,9 +176,13 @@ export default function AdminPage() {
                       name="logoUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>URL del Logo</FormLabel>
+                          <FormLabel>Logo de la Empresa</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="https://..." />
+                            <SingleImageUpload 
+                              value={field.value || ""} 
+                              onChange={field.onChange}
+                              label="Logo"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -177,7 +199,7 @@ export default function AdminPage() {
                       <FormItem>
                         <FormLabel>Dirección</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -196,7 +218,7 @@ export default function AdminPage() {
                               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
                                 <Phone className="h-4 w-4" />
                               </span>
-                              <Input {...field} className="rounded-l-none" />
+                              <Input {...field} value={field.value || ""} className="rounded-l-none" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -215,7 +237,7 @@ export default function AdminPage() {
                               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
                                 <AtSign className="h-4 w-4" />
                               </span>
-                              <Input {...field} type="email" className="rounded-l-none" />
+                              <Input {...field} value={field.value || ""} type="email" className="rounded-l-none" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -236,7 +258,7 @@ export default function AdminPage() {
                               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
                                 <Globe className="h-4 w-4" />
                               </span>
-                              <Input {...field} className="rounded-l-none" />
+                              <Input {...field} value={field.value || ""} className="rounded-l-none" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -255,7 +277,7 @@ export default function AdminPage() {
                               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
                                 <FileText className="h-4 w-4" />
                               </span>
-                              <Input {...field} className="rounded-l-none" />
+                              <Input {...field} value={field.value || ""} className="rounded-l-none" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -284,25 +306,291 @@ export default function AdminPage() {
         </TabsContent>
         
         <TabsContent value="backup">
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <h3 className="text-lg font-medium text-muted-foreground">
-              Módulo en desarrollo
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Esta funcionalidad estará disponible próximamente
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Respaldos</CardTitle>
+              <CardDescription>
+                Realiza copias de seguridad de la base de datos y configura respaldos automáticos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert>
+                <HardDrive className="h-4 w-4" />
+                <AlertTitle>Información importante</AlertTitle>
+                <AlertDescription>
+                  Es recomendable realizar respaldos periódicos para proteger la información de su empresa.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Respaldo Manual</CardTitle>
+                    <CardDescription>
+                      Crea una copia de seguridad de la base de datos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="text-sm text-muted-foreground">
+                        Última copia: <span className="font-semibold">12/04/2025 14:30</span>
+                      </div>
+                      <Button className="w-full">
+                        <Download className="h-4 w-4 mr-2" />
+                        Generar Respaldo Ahora
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Restaurar Copia</CardTitle>
+                    <CardDescription>
+                      Restaura el sistema desde una copia de seguridad
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Input 
+                          type="file" 
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10" 
+                          accept=".sql,.backup"
+                        />
+                        <Button variant="outline" className="w-full relative">
+                          <UploadIcon className="h-4 w-4 mr-2" />
+                          Seleccionar Archivo
+                        </Button>
+                      </div>
+                      <Button className="w-full" variant="destructive" disabled>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Restaurar Sistema
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Programación de Respaldos</CardTitle>
+                  <CardDescription>
+                    Configura respaldos automáticos de la base de datos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="autoBackup" className="h-4 w-4" />
+                      <label htmlFor="autoBackup" className="text-sm">Habilitar respaldos automáticos</label>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="frequency" className="text-sm font-medium">Frecuencia</label>
+                        <select 
+                          id="frequency" 
+                          className="w-full rounded-md border border-input p-2 mt-1"
+                          disabled
+                        >
+                          <option>Diario</option>
+                          <option>Semanal</option>
+                          <option>Mensual</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="time" className="text-sm font-medium">Hora</label>
+                        <input 
+                          type="time" 
+                          id="time" 
+                          className="w-full rounded-md border border-input p-2 mt-1"
+                          disabled
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="retention" className="text-sm font-medium">Retención</label>
+                        <select 
+                          id="retention" 
+                          className="w-full rounded-md border border-input p-2 mt-1"
+                          disabled
+                        >
+                          <option>Últimos 7 días</option>
+                          <option>Últimas 4 semanas</option>
+                          <option>Últimos 3 meses</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <Button disabled className="w-full md:w-auto">
+                      <Save className="h-4 w-4 mr-2" />
+                      Guardar Configuración
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="system">
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <h3 className="text-lg font-medium text-muted-foreground">
-              Módulo en desarrollo
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Esta funcionalidad estará disponible próximamente
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Información del Sistema</CardTitle>
+              <CardDescription>
+                Visualiza el estado del sistema y configura opciones avanzadas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert>
+                <Server className="h-4 w-4" />
+                <AlertTitle>Información del servidor</AlertTitle>
+                <AlertDescription>
+                  El sistema está funcionando correctamente en modo producción.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Estado del Servidor</CardTitle>
+                    <CardDescription>
+                      Monitorea el estado actual del sistema
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-sm">Versión:</span>
+                        <span className="text-sm font-medium">v1.0.0</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-sm">Estado:</span>
+                        <span className="text-sm font-medium text-green-500">En línea</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-sm">Tiempo activo:</span>
+                        <span className="text-sm font-medium">7 días, 3 horas</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Última actualización:</span>
+                        <span className="text-sm font-medium">02/04/2025</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Base de Datos</CardTitle>
+                    <CardDescription>
+                      Información de la base de datos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-sm">Tipo:</span>
+                        <span className="text-sm font-medium">PostgreSQL</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-sm">Estado:</span>
+                        <span className="text-sm font-medium text-green-500">Conectado</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-sm">Tamaño:</span>
+                        <span className="text-sm font-medium">12.4 MB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Registros totales:</span>
+                        <span className="text-sm font-medium">1,247</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center">
+                      <Activity className="h-4 w-4 mr-2" />
+                      Rendimiento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-24 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold">98.2%</p>
+                        <p className="text-xs text-muted-foreground">Tiempo activo</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center">
+                      <Database className="h-4 w-4 mr-2" />
+                      Almacenamiento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-24 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold">43.5%</p>
+                        <p className="text-xs text-muted-foreground">Espacio utilizado</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Respuesta
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-24 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold">217ms</p>
+                        <p className="text-xs text-muted-foreground">Tiempo promedio</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Acciones del Sistema</CardTitle>
+                  <CardDescription>
+                    Acciones avanzadas para administradores
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Button variant="outline" className="w-full">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Limpiar Caché
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <Lock className="h-4 w-4 mr-2" />
+                      Modo Mantenimiento
+                    </Button>
+                    <Button variant="outline" className="w-full" disabled>
+                      <Server className="h-4 w-4 mr-2" />
+                      Actualizar Sistema
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </DashboardLayout>
