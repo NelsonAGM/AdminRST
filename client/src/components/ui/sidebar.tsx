@@ -33,18 +33,20 @@ function SidebarItem({ href, icon, children, onClick }: SidebarItemProps) {
   const isActive = location === href;
 
   return (
-    <Link href={href}>
-      <a
-        onClick={onClick}
-        className={cn(
-          "flex items-center py-3 px-4 text-sm text-sidebar-foreground hover:bg-sidebar-primary hover:bg-opacity-30 hover:text-white rounded-md mb-1 transition-colors",
-          isActive && "bg-sidebar-primary bg-opacity-30 text-white"
-        )}
-      >
-        <span className="mr-3">{icon}</span>
-        <span>{children}</span>
-      </a>
-    </Link>
+    <div className="w-full">
+      <Link href={href}>
+        <button
+          onClick={onClick}
+          className={cn(
+            "flex items-center py-3 px-4 text-sm text-sidebar-foreground hover:bg-sidebar-primary hover:bg-opacity-30 hover:text-white rounded-md mb-1 transition-colors w-full text-left",
+            isActive && "bg-sidebar-primary bg-opacity-30 text-white"
+          )}
+        >
+          <span className="mr-3">{icon}</span>
+          <span>{children}</span>
+        </button>
+      </Link>
+    </div>
   );
 }
 
@@ -78,7 +80,7 @@ export function Sidebar({ onLinkClick }: SidebarProps) {
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center">
           <Laptop className="h-6 w-6 text-secondary mr-2" />
-          <h1 className="text-xl font-medium">{companySettings?.name || "TechService"}</h1>
+          <h1 className="text-xl font-medium">{companySettings?.name || "Sistemas RST"}</h1>
         </div>
       </div>
 

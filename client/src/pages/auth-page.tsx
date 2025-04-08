@@ -37,7 +37,7 @@ export default function AuthPage() {
     setIsLoginForm(!isLoginForm);
   };
 
-  const onLogin = (data: z.infer<typeof loginForm.formState.defaultValues>) => {
+  const onLogin = (data: any) => {
     loginMutation.mutate(data, {
       onSuccess: () => {
         setLocation("/");
@@ -45,7 +45,7 @@ export default function AuthPage() {
     });
   };
 
-  const onRegister = (data: z.infer<typeof registerForm.formState.defaultValues>) => {
+  const onRegister = (data: any) => {
     registerMutation.mutate(data, {
       onSuccess: () => {
         setLocation("/");
@@ -68,7 +68,7 @@ export default function AuthPage() {
           <div className="text-center mb-8">
             <h1 className="text-primary text-3xl font-medium mb-2 flex items-center justify-center">
               <Laptop className="h-8 w-8 mr-2 text-secondary" />
-              {companySettings?.name || "TechService"}
+              {companySettings?.name || "Sistemas RST"}
             </h1>
             <p className="text-gray-600">Sistema de Gestión de Servicios</p>
           </div>

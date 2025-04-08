@@ -140,11 +140,11 @@ export class MemStorage implements IStorage {
     // Initialize company settings
     this.companySettingsData.set(1, {
       id: 1,
-      name: "TechService",
+      name: "Sistemas RST",
       logoUrl: null,
       address: "Av. Principal 123",
       phone: "+123456789",
-      email: "info@techservice.com",
+      email: "info@sistemasrst.com",
       website: null,
       taxId: null,
       updatedAt: new Date()
