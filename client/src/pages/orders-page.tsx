@@ -94,8 +94,8 @@ export default function OrdersPage() {
   const form = useForm<ExtendedServiceOrder>({
     resolver: zodResolver(extendedServiceOrderSchema),
     defaultValues: {
-      clientId: 0,
-      equipmentId: 0,
+      clientId: undefined, // Cambio de 0 a undefined para evitar validación incorrecta
+      equipmentId: undefined, // Cambio de 0 a undefined para evitar validación incorrecta
       technicianId: null,
       description: "",
       status: "pending",
@@ -123,9 +123,10 @@ export default function OrdersPage() {
   // Reset form when opening for a new order
   const handleAddOrder = () => {
     setOrderToEdit(null);
+    setSelectedClientId(null);
     form.reset({
-      clientId: 0,
-      equipmentId: 0,
+      clientId: undefined,
+      equipmentId: undefined,
       technicianId: null,
       description: "",
       status: "pending",
@@ -311,17 +312,27 @@ export default function OrdersPage() {
   
   // Handle form submission for creating/updating orders
   const onSubmit = (data: ExtendedServiceOrder) => {
+    // Antes de enviar, verificamos que tenemos valores válidos para los campos requeridos
+    if (!data.clientId || !data.equipmentId) {
+      toast({
+        title: "Error de validación",
+        description: "Debe seleccionar un cliente y un equipo",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Convertimos el ExtendedServiceOrder a InsertServiceOrder para la mutación
-    const insertData = {
-      clientId: data.clientId,
-      equipmentId: data.equipmentId,
-      technicianId: data.technicianId,
+    const insertData: InsertServiceOrder = {
+      clientId: Number(data.clientId),
+      equipmentId: Number(data.equipmentId),
+      technicianId: data.technicianId ? Number(data.technicianId) : null,
       description: data.description,
       status: data.status,
       notes: data.notes,
       materialsUsed: data.materialsUsed,
       expectedDeliveryDate: data.expectedDeliveryDate,
-    } as InsertServiceOrder;
+    };
     
     if (orderToEdit) {
       updateMutation.mutate({ id: orderToEdit.id, data: insertData });
@@ -378,7 +389,8 @@ export default function OrdersPage() {
   const handleClientChange = (clientId: number) => {
     setSelectedClientId(clientId);
     form.setValue("clientId", clientId);
-    form.setValue("equipmentId", 0); // Reset equipment selection
+    // Realizamos el reseteo usando form.resetField para limpiar el valor del equipmentId
+    form.resetField("equipmentId");
   };
   
   // Columns for service order table
@@ -742,7 +754,7 @@ export default function OrdersPage() {
       <DataTable 
         columns={columns} 
         data={orders || []} 
-        isLoading={isLoading}
+        loading={isLoading}
         searchColumn="orderNumber"
         searchPlaceholder="Buscar por número de orden..."
       />
