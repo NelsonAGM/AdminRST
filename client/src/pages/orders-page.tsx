@@ -41,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -499,17 +500,19 @@ export default function OrdersPage() {
           </p>
         </div>
         
+        <Button onClick={handleAddOrder}>
+          <Plus className="mr-2 h-4 w-4" /> Nueva Orden
+        </Button>
+        
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddOrder}>
-              <Plus className="mr-2 h-4 w-4" /> Nueva Orden
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {orderToEdit ? "Editar Orden de Servicio" : "Nueva Orden de Servicio"}
               </DialogTitle>
+              <DialogDescription>
+                Complete el formulario para {orderToEdit ? "actualizar" : "crear"} una orden de servicio.
+              </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -819,7 +822,12 @@ export default function OrdersPage() {
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-3xl DialogContent">
           <DialogHeader className="flex justify-between items-center">
-            <DialogTitle>Detalles de la Orden #{selectedOrder?.orderNumber}</DialogTitle>
+            <div>
+              <DialogTitle>Detalles de la Orden #{selectedOrder?.orderNumber}</DialogTitle>
+              <DialogDescription>
+                Información completa de la orden de servicio y opciones de actualización.
+              </DialogDescription>
+            </div>
             <Button 
               variant="outline" 
               size="sm" 
