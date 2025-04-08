@@ -90,6 +90,7 @@ export default function OrdersPage() {
   const [orderToEdit, setOrderToEdit] = useState<ServiceOrder | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<ServiceOrder | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("all");
   
@@ -127,6 +128,7 @@ export default function OrdersPage() {
   const handleAddOrder = () => {
     setOrderToEdit(null);
     setSelectedClientId(null);
+    setIsFormOpen(true);
     form.reset({
       clientId: undefined,
       equipmentId: undefined,
@@ -146,6 +148,8 @@ export default function OrdersPage() {
   // Set form values when editing an order
   const handleEditOrder = (order: ServiceOrder) => {
     setOrderToEdit(order);
+    setIsFormOpen(true);
+    setSelectedClientId(order.clientId);
     form.reset({
       clientId: order.clientId,
       equipmentId: order.equipmentId,
@@ -234,6 +238,7 @@ export default function OrdersPage() {
         description: "La orden de servicio ha sido creada correctamente",
       });
       form.reset();
+      setIsFormOpen(false);
     },
     onError: (error) => {
       toast({
@@ -257,6 +262,7 @@ export default function OrdersPage() {
         description: "La orden de servicio ha sido actualizada correctamente",
       });
       setOrderToEdit(null);
+      setIsFormOpen(false);
     },
     onError: (error) => {
       toast({
@@ -493,7 +499,7 @@ export default function OrdersPage() {
           </p>
         </div>
         
-        <Dialog>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleAddOrder}>
               <Plus className="mr-2 h-4 w-4" /> Nueva Orden
