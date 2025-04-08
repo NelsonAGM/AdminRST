@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -78,6 +78,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { 
   Tabs, 
@@ -111,6 +112,7 @@ export default function OrdersPage() {
       photos: [],
       clientApproval: false,
       clientApprovalDate: null,
+      cost: null,
     },
   });
   
@@ -143,6 +145,7 @@ export default function OrdersPage() {
       photos: [],
       clientApproval: false,
       clientApprovalDate: null,
+      cost: null,
     });
   };
   
@@ -164,6 +167,7 @@ export default function OrdersPage() {
       photos: order.photos || [],
       clientApproval: order.clientApproval || false,
       clientApprovalDate: order.clientApprovalDate ? new Date(order.clientApprovalDate) : null,
+      cost: order.cost || null,
     });
   };
   
@@ -346,6 +350,7 @@ export default function OrdersPage() {
       photos: data.photos,
       clientApproval: data.clientApproval,
       clientApprovalDate: data.clientApprovalDate,
+      cost: data.cost,
     };
     
     if (orderToEdit) {
@@ -449,6 +454,11 @@ export default function OrdersPage() {
       header: "Técnico",
       accessorKey: "technicianId" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => getTechnicianName(row.technicianId),
+    },
+    {
+      header: "Costo",
+      accessorKey: "cost" as keyof ServiceOrder,
+      cell: (row: ServiceOrder) => row.cost ? `$${row.cost.toLocaleString()}` : "N/A",
     },
     {
       header: "Acciones",
@@ -697,6 +707,28 @@ export default function OrdersPage() {
                 
                 <FormField
                   control={form.control}
+                  name="cost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Costo del Servicio</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          placeholder="Monto en pesos"
+                          value={field.value || ""}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : null)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Ingrese el costo total del servicio sin usar puntos ni comas
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="expectedDeliveryDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
@@ -882,6 +914,13 @@ export default function OrdersPage() {
                 <div className="col-span-2">
                   <h3 className="text-sm font-medium text-muted-foreground">Materiales Utilizados</h3>
                   <p className="text-lg whitespace-pre-line">{selectedOrder.materialsUsed || "Sin materiales registrados"}</p>
+                </div>
+
+                <div className="col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Costo del Servicio</h3>
+                  <p className="text-lg font-semibold">
+                    {selectedOrder.cost ? `$${selectedOrder.cost.toLocaleString()}` : "No especificado"}
+                  </p>
                 </div>
                 
                 {selectedOrder.photos && selectedOrder.photos.length > 0 && (

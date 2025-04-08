@@ -76,6 +76,7 @@ export const serviceOrders = pgTable("service_orders", {
   photos: text("photos").array(),
   clientApproval: boolean("client_approval").default(false),
   clientApprovalDate: timestamp("client_approval_date"),
+  cost: integer("cost"),
 });
 
 // Company Settings table

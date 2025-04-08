@@ -8,6 +8,7 @@ export const extendedServiceOrderSchema = insertServiceOrderSchema.extend({
   photos: z.array(z.string()).optional(),
   clientApproval: z.boolean().optional(),
   clientApprovalDate: z.date().nullable().optional(),
+  cost: z.number().int().nullable().optional(),
 });
 
 export type ExtendedServiceOrder = z.infer<typeof extendedServiceOrderSchema>;
