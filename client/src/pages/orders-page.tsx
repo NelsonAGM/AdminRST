@@ -505,7 +505,7 @@ export default function OrdersPage() {
         </Button>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {orderToEdit ? "Editar Orden de Servicio" : "Nueva Orden de Servicio"}
@@ -820,7 +820,7 @@ export default function OrdersPage() {
       
       {/* Order details dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-3xl DialogContent">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto DialogContent">
           <DialogHeader className="flex justify-between items-center">
             <div>
               <DialogTitle>Detalles de la Orden #{selectedOrder?.orderNumber}</DialogTitle>
