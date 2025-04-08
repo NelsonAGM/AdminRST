@@ -8,6 +8,23 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+export async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+export async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
 
 const MemoryStore = createMemoryStore(session);
 
@@ -99,28 +116,55 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000, // Prune expired entries every 24h
     });
     
-    // Initialize with admin user
-    this.createUser({
+    // Initialize with admin user - we'll do this directly instead of using async
+    const adminId = this.userCurrentId++;
+    this.usersData.set(adminId, {
+      id: adminId,
       username: "admin",
-      password: "admin123",
+      password: "admin123", // Temporary password, will be replaced with hashed version later
       fullName: "Administrador",
       email: "admin@example.com",
       role: "admin",
-      confirmPassword: "admin123"
+      createdAt: new Date()
+    });
+    
+    // Hash the admin password afterwards (will be applied when the promise resolves)
+    hashPassword("admin123").then(hashedPassword => {
+      const admin = this.usersData.get(adminId);
+      if (admin) {
+        admin.password = hashedPassword;
+        this.usersData.set(adminId, admin);
+      }
     });
     
     // Initialize company settings
     this.companySettingsData.set(1, {
       id: 1,
       name: "TechService",
-      logoUrl: "",
+      logoUrl: null,
       address: "Av. Principal 123",
       phone: "+123456789",
       email: "info@techservice.com",
-      website: "www.techservice.com",
-      taxId: "123-456-789",
+      website: null,
+      taxId: null,
       updatedAt: new Date()
     });
+  }
+
+  // Initialize admin user with hashed password
+  private async initAdminUser() {
+    const hashedPassword = await hashPassword("admin123");
+    const id = this.userCurrentId++;
+    const user: User = {
+      id,
+      username: "admin",
+      password: hashedPassword,
+      fullName: "Administrador",
+      email: "admin@example.com",
+      role: "admin",
+      createdAt: new Date()
+    };
+    this.usersData.set(id, user);
   }
 
   // User methods
@@ -137,7 +181,24 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
     const { confirmPassword, ...userData } = insertUser;
-    const user: User = { ...userData, id, createdAt: new Date() };
+    
+    // Si se está creando un usuario desde el constructor, la contraseña ya estará hasheada
+    // De lo contrario, hashear la contraseña aquí
+    let hashedPassword = userData.password;
+    if (!userData.password.includes('.')) {
+      hashedPassword = await hashPassword(userData.password);
+    }
+    
+    // Asegurarnos de que role tiene un valor por defecto si no viene
+    const role = userData.role || "user";
+    
+    const user: User = { 
+      ...userData, 
+      password: hashedPassword,
+      role,
+      id, 
+      createdAt: new Date() 
+    };
     this.usersData.set(id, user);
     return user;
   }
@@ -147,6 +208,12 @@ export class MemStorage implements IStorage {
     if (!user) return undefined;
     
     const { confirmPassword, ...updatedData } = userData;
+    
+    // Si se está actualizando la contraseña, hashearla
+    if (updatedData.password && !updatedData.password.includes('.')) {
+      updatedData.password = await hashPassword(updatedData.password);
+    }
+    
     const updatedUser = { ...user, ...updatedData };
     this.usersData.set(id, updatedUser);
     return updatedUser;
@@ -202,7 +269,15 @@ export class MemStorage implements IStorage {
 
   async createTechnician(insertTechnician: InsertTechnician): Promise<Technician> {
     const id = this.technicianCurrentId++;
-    const technician: Technician = { ...insertTechnician, id, createdAt: new Date() };
+    // Asegurarnos de que status tiene un valor por defecto
+    const status = insertTechnician.status || "available";
+    
+    const technician: Technician = { 
+      ...insertTechnician, 
+      status,
+      id, 
+      createdAt: new Date() 
+    };
     this.techniciansData.set(id, technician);
     return technician;
   }
@@ -231,7 +306,15 @@ export class MemStorage implements IStorage {
 
   async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
     const id = this.equipmentCurrentId++;
-    const equipment: Equipment = { ...insertEquipment, id, createdAt: new Date() };
+    // Asegurarnos de que description es null si no viene
+    const description = insertEquipment.description ?? null;
+    
+    const equipment: Equipment = { 
+      ...insertEquipment, 
+      description,
+      id, 
+      createdAt: new Date() 
+    };
     this.equipmentData.set(id, equipment);
     return equipment;
   }
@@ -267,8 +350,17 @@ export class MemStorage implements IStorage {
   async createServiceOrder(insertServiceOrder: InsertServiceOrder): Promise<ServiceOrder> {
     const id = this.serviceOrderCurrentId++;
     const orderNumber = `ORD-${new Date().getFullYear()}-${this.orderNumber++}`;
+    
+    // Establecer valores por defecto para campos requeridos
+    const status = insertServiceOrder.status || "pending";
+    const technicianId = insertServiceOrder.technicianId ?? null;
+    const notes = insertServiceOrder.notes ?? null;
+    
     const serviceOrder: ServiceOrder = { 
       ...insertServiceOrder, 
+      status,
+      technicianId,
+      notes,
       id, 
       orderNumber,
       requestDate: new Date(),
@@ -320,11 +412,21 @@ export class MemStorage implements IStorage {
 
   async updateCompanySettings(settingsData: InsertCompanySettings): Promise<CompanySettings> {
     const settings = this.companySettingsData.get(1);
+    
+    // Asegurar que los campos opcionales son null si no están definidos
+    const logoUrl = settingsData.logoUrl ?? null;
+    const website = settingsData.website ?? null;
+    const taxId = settingsData.taxId ?? null;
+    
     const updatedSettings: CompanySettings = { 
-      ...settingsData, 
+      ...settingsData,
+      logoUrl,
+      website,
+      taxId,
       id: 1, 
       updatedAt: new Date()
     };
+    
     this.companySettingsData.set(1, updatedSettings);
     return updatedSettings;
   }

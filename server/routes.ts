@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, hashPassword } from "./auth";
-import { storage } from "./storage";
+import { setupAuth } from "./auth";
+import { storage, hashPassword } from "./storage";
 import { 
   insertClientSchema, insertTechnicianSchema, insertEquipmentSchema, 
   insertServiceOrderSchema, updateServiceOrderSchema, insertCompanySettingsSchema,
@@ -26,7 +26,7 @@ const ensureAdmin = (req: Request, res: Response, next: Function) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up auth routes (register, login, logout, user)
-  setupAuth(app);
+  setupAuth(app, storage);
   
   // Dashboard stats
   app.get("/api/dashboard/stats", ensureAuthenticated, async (req, res) => {

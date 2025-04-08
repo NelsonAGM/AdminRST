@@ -2,9 +2,8 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
-import { storage } from "./storage";
+import type { IStorage } from "./storage";
+import { hashPassword, comparePasswords } from "./storage";
 import { User as SelectUser, loginUserSchema } from "@shared/schema";
 
 declare global {
@@ -13,22 +12,7 @@ declare global {
   }
 }
 
-const scryptAsync = promisify(scrypt);
-
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-export async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
-}
-
-export function setupAuth(app: Express) {
+export function setupAuth(app: Express, storage: IStorage) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'techservice-secret-key',
     resave: false,
@@ -77,7 +61,7 @@ export function setupAuth(app: Express) {
         return res.status(400).send("El nombre de usuario ya existe");
       }
 
-      const existingEmail = Array.from(storage.listUsers()).find(
+      const existingEmail = Array.from(await storage.listUsers()).find(
         user => user.email === req.body.email
       );
       if (existingEmail) {
@@ -108,7 +92,7 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ errors: result.error.errors });
       }
       
-      passport.authenticate("local", (err, user, info) => {
+      passport.authenticate("local", (err: any, user: any, info: any) => {
         if (err) return next(err);
         if (!user) return res.status(401).send("Credenciales inválidas");
         
