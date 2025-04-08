@@ -18,6 +18,8 @@ interface DataTableProps<T> {
   pagination?: boolean;
   pageSize?: number;
   onRowClick?: (row: T) => void;
+  searchColumn?: string;
+  searchPlaceholder?: string;
 }
 
 export function DataTable<T>({
@@ -28,6 +30,8 @@ export function DataTable<T>({
   pagination = true,
   pageSize = 10,
   onRowClick,
+  searchColumn,
+  searchPlaceholder = "Buscar...",
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +39,20 @@ export function DataTable<T>({
   // Filter data based on search term
   const filteredData = searchable && searchTerm
     ? data.filter((row) => {
+        // Si hay una columna específica para buscar, solo buscamos en esa columna
+        if (searchColumn) {
+          const accessorKey = searchColumn as keyof T;
+          const value = row[accessorKey];
+          if (typeof value === "string") {
+            return value.toLowerCase().includes(searchTerm.toLowerCase());
+          }
+          if (typeof value === "number") {
+            return value.toString().includes(searchTerm);
+          }
+          return false;
+        }
+        
+        // Si no hay columna específica, buscamos en todas las columnas
         return columns.some((column) => {
           const value = row[column.accessorKey];
           if (typeof value === "string") {
@@ -61,7 +79,7 @@ export function DataTable<T>({
         <div className="flex w-full max-w-sm items-center space-x-2">
           <Input
             type="text"
-            placeholder="Buscar..."
+            placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
