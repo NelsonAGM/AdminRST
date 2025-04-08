@@ -10,6 +10,10 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import { db } from "./db";
+import { eq, and, sql } from "drizzle-orm";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
 const scryptAsync = promisify(scrypt);
 
@@ -27,6 +31,7 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Storage interface
 export interface IStorage {
@@ -79,7 +84,296 @@ export interface IStorage {
   sessionStore: session.Store;
 }
 
-// Memory Storage Implementation
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      tableName: 'session', // Use a different name than 'sessions' which is the default
+      createTableIfMissing: true
+    });
+    
+    // Initialize with admin user and company settings
+    this.initializeDefaults();
+  }
+
+  private async initializeDefaults() {
+    // Check if admin user exists
+    const adminUser = await this.getUserByUsername("admin");
+    if (!adminUser) {
+      // Create admin user
+      const hashedPassword = await hashPassword("admin123");
+      await db.insert(users).values({
+        username: "admin",
+        password: hashedPassword,
+        fullName: "Administrador",
+        email: "admin@example.com",
+        role: "admin"
+      }).onConflictDoNothing();
+    }
+    
+    // Check if company settings exist
+    const settings = await this.getCompanySettings();
+    if (!settings) {
+      // Create company settings
+      await db.insert(companySettings).values({
+        name: "Sistemas RST",
+        address: "Av. Principal 123",
+        phone: "+123456789",
+        email: "info@sistemasrst.com"
+      }).onConflictDoNothing();
+    }
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const { confirmPassword, ...userData } = insertUser;
+    
+    // Hash password if it's not already hashed
+    let hashedPassword = userData.password;
+    if (!userData.password.includes('.')) {
+      hashedPassword = await hashPassword(userData.password);
+    }
+    
+    const [user] = await db.insert(users).values({
+      ...userData,
+      password: hashedPassword
+    }).returning();
+    
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const { confirmPassword, ...updatedData } = userData;
+    
+    // Hash password if it's being updated and not already hashed
+    if (updatedData.password && !updatedData.password.includes('.')) {
+      updatedData.password = await hashPassword(updatedData.password);
+    }
+    
+    const [updatedUser] = await db.update(users)
+      .set(updatedData)
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    await db.delete(users).where(eq(users.id, id));
+    return true;
+  }
+
+  async listUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  // Client methods
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async createClient(insertClient: InsertClient): Promise<Client> {
+    const [client] = await db.insert(clients).values(insertClient).returning();
+    return client;
+  }
+
+  async updateClient(id: number, clientData: Partial<InsertClient>): Promise<Client | undefined> {
+    const [updatedClient] = await db.update(clients)
+      .set(clientData)
+      .where(eq(clients.id, id))
+      .returning();
+    
+    return updatedClient;
+  }
+
+  async deleteClient(id: number): Promise<boolean> {
+    await db.delete(clients).where(eq(clients.id, id));
+    return true;
+  }
+
+  async listClients(): Promise<Client[]> {
+    return await db.select().from(clients);
+  }
+
+  // Technician methods
+  async getTechnician(id: number): Promise<Technician | undefined> {
+    const [technician] = await db.select().from(technicians).where(eq(technicians.id, id));
+    return technician;
+  }
+  
+  async getTechnicianByUserId(userId: number): Promise<Technician | undefined> {
+    const [technician] = await db.select().from(technicians).where(eq(technicians.userId, userId));
+    return technician;
+  }
+
+  async createTechnician(insertTechnician: InsertTechnician): Promise<Technician> {
+    const [technician] = await db.insert(technicians).values(insertTechnician).returning();
+    return technician;
+  }
+
+  async updateTechnician(id: number, technicianData: Partial<InsertTechnician>): Promise<Technician | undefined> {
+    const [updatedTechnician] = await db.update(technicians)
+      .set(technicianData)
+      .where(eq(technicians.id, id))
+      .returning();
+    
+    return updatedTechnician;
+  }
+
+  async deleteTechnician(id: number): Promise<boolean> {
+    await db.delete(technicians).where(eq(technicians.id, id));
+    return true;
+  }
+
+  async listTechnicians(): Promise<Technician[]> {
+    return await db.select().from(technicians);
+  }
+
+  // Equipment methods
+  async getEquipment(id: number): Promise<Equipment | undefined> {
+    const [equipmentItem] = await db.select().from(equipment).where(eq(equipment.id, id));
+    return equipmentItem;
+  }
+
+  async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
+    const [newEquipment] = await db.insert(equipment).values(insertEquipment).returning();
+    return newEquipment;
+  }
+
+  async updateEquipment(id: number, equipmentData: Partial<InsertEquipment>): Promise<Equipment | undefined> {
+    const [updatedEquipment] = await db.update(equipment)
+      .set(equipmentData)
+      .where(eq(equipment.id, id))
+      .returning();
+    
+    return updatedEquipment;
+  }
+
+  async deleteEquipment(id: number): Promise<boolean> {
+    await db.delete(equipment).where(eq(equipment.id, id));
+    return true;
+  }
+
+  async listEquipment(): Promise<Equipment[]> {
+    return await db.select().from(equipment);
+  }
+
+  async listEquipmentByClient(clientId: number): Promise<Equipment[]> {
+    return await db.select().from(equipment).where(eq(equipment.clientId, clientId));
+  }
+
+  // Service Order methods
+  async getServiceOrder(id: number): Promise<ServiceOrder | undefined> {
+    const [order] = await db.select().from(serviceOrders).where(eq(serviceOrders.id, id));
+    return order;
+  }
+
+  async createServiceOrder(insertServiceOrder: InsertServiceOrder): Promise<ServiceOrder> {
+    // Generate an order number
+    const year = new Date().getFullYear();
+    
+    // Get last order number for this year to increment
+    const [lastOrder] = await db
+      .select({ orderNumber: serviceOrders.orderNumber })
+      .from(serviceOrders)
+      .where(sql`${serviceOrders.orderNumber} LIKE ${`ORD-${year}-%`}`)
+      .orderBy(sql`${serviceOrders.orderNumber} DESC`)
+      .limit(1);
+    
+    let orderNumber = `ORD-${year}-1000`;
+    if (lastOrder) {
+      const parts = lastOrder.orderNumber.split('-');
+      const lastNumber = parseInt(parts[2], 10);
+      orderNumber = `ORD-${year}-${lastNumber + 1}`;
+    }
+    
+    const [serviceOrder] = await db.insert(serviceOrders).values({
+      ...insertServiceOrder,
+      orderNumber,
+      requestDate: new Date()
+    }).returning();
+    
+    return serviceOrder;
+  }
+
+  async updateServiceOrder(id: number, serviceOrderData: Partial<UpdateServiceOrder>): Promise<ServiceOrder | undefined> {
+    const [updatedServiceOrder] = await db.update(serviceOrders)
+      .set(serviceOrderData)
+      .where(eq(serviceOrders.id, id))
+      .returning();
+    
+    return updatedServiceOrder;
+  }
+
+  async deleteServiceOrder(id: number): Promise<boolean> {
+    await db.delete(serviceOrders).where(eq(serviceOrders.id, id));
+    return true;
+  }
+
+  async listServiceOrders(): Promise<ServiceOrder[]> {
+    return await db.select().from(serviceOrders);
+  }
+
+  async listServiceOrdersByClient(clientId: number): Promise<ServiceOrder[]> {
+    return await db.select().from(serviceOrders).where(eq(serviceOrders.clientId, clientId));
+  }
+
+  async listServiceOrdersByTechnician(technicianId: number): Promise<ServiceOrder[]> {
+    return await db.select().from(serviceOrders).where(eq(serviceOrders.technicianId, technicianId));
+  }
+  
+  async listServiceOrdersByStatus(status: string): Promise<ServiceOrder[]> {
+    return await db.select().from(serviceOrders).where(sql`${serviceOrders.status} = ${status}`);
+  }
+
+  // Company Settings methods
+  async getCompanySettings(): Promise<CompanySettings | undefined> {
+    const [settings] = await db.select().from(companySettings).limit(1);
+    return settings;
+  }
+
+  async updateCompanySettings(settingsData: InsertCompanySettings): Promise<CompanySettings> {
+    const existingSettings = await this.getCompanySettings();
+    
+    if (existingSettings) {
+      // Update existing settings
+      const [updatedSettings] = await db.update(companySettings)
+        .set({
+          ...settingsData,
+          updatedAt: new Date()
+        })
+        .where(eq(companySettings.id, existingSettings.id))
+        .returning();
+      
+      return updatedSettings;
+    } else {
+      // Create new settings
+      const [newSettings] = await db.insert(companySettings)
+        .values({
+          ...settingsData
+        })
+        .returning();
+      
+      return newSettings;
+    }
+  }
+}
+
+// Memory Storage Implementation - keeping this for reference
 export class MemStorage implements IStorage {
   private usersData: Map<number, User>;
   private clientsData: Map<number, Client>;
@@ -444,4 +738,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Exportamos la implementación de base de datos
+export const storage = new DatabaseStorage();

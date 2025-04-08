@@ -374,7 +374,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/service-orders", ensureAuthenticated, async (req, res) => {
     try {
-      const validatedData = insertServiceOrderSchema.parse(req.body);
+      console.log("Recibiendo datos de orden de servicio:", JSON.stringify(req.body));
+      
+      const parseResult = insertServiceOrderSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Datos inválidos", 
+          error: parseResult.error.errors 
+        });
+      }
+      
+      const validatedData = parseResult.data;
       
       // Check if client exists
       const client = await storage.getClient(validatedData.clientId);
@@ -399,7 +409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serviceOrder = await storage.createServiceOrder(validatedData);
       res.status(201).json(serviceOrder);
     } catch (error) {
-      res.status(400).json({ message: "Datos inválidos", error });
+      console.error("Error al crear orden de servicio:", error);
+      res.status(400).json({ message: "Datos inválidos", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
