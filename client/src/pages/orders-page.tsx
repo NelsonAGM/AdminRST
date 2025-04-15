@@ -936,14 +936,26 @@ export default function OrdersPage() {
                   </div>
                 )}
                 
-                {selectedOrder.clientSignature && (
-                  <div className="col-span-2">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Firma del Cliente</h3>
-                    <div className="border rounded-md p-2 bg-white max-w-md">
-                      <img src={selectedOrder.clientSignature} alt="Firma del cliente" className="w-full h-auto" />
+                <div className="col-span-2 grid grid-cols-2 gap-4">
+                  {selectedOrder.clientSignature && (
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Firma del Cliente</h3>
+                      <div className="border rounded-md p-2 bg-white max-w-xs h-24">
+                        <img src={selectedOrder.clientSignature} alt="Firma del cliente" className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2 bg-blue-900 text-white p-1">TÉRMINOS Y CONDICIONES</h3>
+                    <div className="text-xs">
+                      <p>1. La presente cotización tiene una vigencia de 7 días naturales.</p>
+                      <p>2. Para importes mayores a $5,000.00 (cinco mil pesos M.N), se requiere el 50% de anticipo.</p>
+                      <p>3. El pago se debe de realizar en una sola exhibición.</p>
+                      <p className="font-semibold mt-1">CLABE Interbancaria 002133701510128581</p>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
               
               <div className="border-t pt-4 print:hidden">
