@@ -22,7 +22,8 @@ import {
   Equipment, 
   Technician, 
   UpdateServiceOrder, 
-  updateServiceOrderSchema 
+  updateServiceOrderSchema,
+  CompanySettings
 } from "@shared/schema";
 import { extendedServiceOrderSchema, ExtendedServiceOrder } from "@/schema/service-order";
 import { Button } from "@/components/ui/button";
@@ -206,6 +207,11 @@ export default function OrdersPage() {
   // Fetch technicians for the dropdown
   const { data: technicians } = useQuery<Technician[]>({
     queryKey: ["/api/technicians"],
+  });
+  
+  // Fetch company settings for the header
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ["/api/company-settings"],
   });
   
   // Get client equipment based on selected client
@@ -846,6 +852,32 @@ export default function OrdersPage() {
           
           {selectedOrder && (
             <div className="space-y-6">
+              {/* Encabezado con datos de la empresa */}
+              <div className="flex justify-between items-center border-b pb-4 print:block">
+                <div className="flex items-center gap-3">
+                  {companySettings?.logoUrl && (
+                    <div className="w-20 h-20">
+                      <img 
+                        src={companySettings.logoUrl} 
+                        alt={companySettings.name} 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="text-xl font-bold text-blue-900">{companySettings?.name || "Sistemas RST"}</h2>
+                    <p className="text-sm">{companySettings?.address || ""}</p>
+                    <p className="text-sm">Tel: {companySettings?.phone || ""}</p>
+                    <p className="text-sm">Email: {companySettings?.email || ""}</p>
+                  </div>
+                </div>
+                <div className="text-right print:mt-2">
+                  <h3 className="font-bold text-lg">ORDEN DE SERVICIO</h3>
+                  <p className="text-xl font-bold text-blue-900">#{selectedOrder.orderNumber}</p>
+                  <p className="text-sm">Fecha: {format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Cliente</h3>
