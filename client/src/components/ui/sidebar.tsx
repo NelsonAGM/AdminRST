@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   Laptop,
+  DollarSign
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";

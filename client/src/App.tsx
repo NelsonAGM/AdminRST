@@ -9,6 +9,7 @@ import OrdersPage from "@/pages/orders-page";
 import EquipmentPage from "@/pages/equipment-page";
 import UsersPage from "@/pages/users-page";
 import AdminPage from "@/pages/admin-page";
+import FinancePage from "@/pages/finance-page";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -66,6 +67,9 @@ function AppRoutes() {
       </Route>
       <Route path="/admin">
         {() => <ProtectedRoute component={AdminPage} />}
+      </Route>
+      <Route path="/finance">
+        {() => <ProtectedRoute component={FinancePage} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
