@@ -38,8 +38,8 @@ function SidebarItem({ href, icon, children, onClick }: SidebarItemProps) {
         <button
           onClick={onClick}
           className={cn(
-            "flex items-center py-3 px-4 text-sm text-sidebar-foreground hover:bg-sidebar-primary hover:bg-opacity-30 hover:text-white rounded-md mb-1 transition-colors w-full text-left",
-            isActive && "bg-sidebar-primary bg-opacity-30 text-white"
+            "flex items-center py-3 px-4 text-sm text-gray-700 hover:bg-sidebar-primary hover:bg-opacity-80 hover:text-white rounded-md mb-1 transition-colors w-full text-left font-medium bg-gray-100",
+            isActive && "bg-sidebar-primary text-white"
           )}
         >
           <span className="mr-3">{icon}</span>
@@ -76,11 +76,11 @@ export function Sidebar({ onLinkClick }: SidebarProps) {
   };
 
   return (
-    <aside className="bg-sidebar-background text-sidebar-foreground w-64 flex flex-col h-screen">
+    <aside className="bg-gray-50 text-sidebar-foreground w-64 flex flex-col h-screen border-r border-gray-200">
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center">
-          <Laptop className="h-6 w-6 text-secondary mr-2" />
-          <h1 className="text-xl font-medium">{companySettings?.name || "Sistemas RST"}</h1>
+          <Laptop className="h-6 w-6 text-primary mr-2" />
+          <h1 className="text-xl font-medium text-gray-800">{companySettings?.name || "Sistemas RST"}</h1>
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export function Sidebar({ onLinkClick }: SidebarProps) {
         <div className="border-t border-sidebar-border pt-4">
           <button
             onClick={handleLogout}
-            className="flex items-center py-2 px-4 text-sidebar-foreground hover:bg-destructive hover:bg-opacity-30 hover:text-white rounded-md transition-colors w-full text-left"
+            className="flex items-center py-3 px-4 text-gray-700 hover:bg-red-500 hover:text-white rounded-md transition-colors w-full text-left font-medium bg-gray-100"
           >
             <LogOut className="h-5 w-5 mr-3" />
             <span>Cerrar Sesión</span>
