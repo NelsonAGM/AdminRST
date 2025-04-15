@@ -625,14 +625,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       
       res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error al crear usuario:", error);
+    } catch (error: any) {
+      console.error("Error al crear usuario:", JSON.stringify(error, null, 2));
+      
       if (error.errors) {
         res.status(400).json({ message: "Datos inválidos", error: error.errors });
       } else if (error.issues) {
-        res.status(400).json({ message: "Datos inválidos", error: error.issues });
+        // Envía los detalles completos del error para mejor diagnóstico
+        res.status(400).json({ 
+          message: "Datos inválidos", 
+          error: error.issues,
+          details: JSON.stringify(error, null, 2),
+          receivedData: JSON.stringify(req.body, null, 2)
+        });
       } else {
-        res.status(400).json({ message: "Datos inválidos", error: error.message || error });
+        res.status(400).json({ 
+          message: "Datos inválidos", 
+          error: error.message || error,
+          details: JSON.stringify(error, null, 2),
+          receivedData: JSON.stringify(req.body, null, 2)
+        });
       }
     }
   });
