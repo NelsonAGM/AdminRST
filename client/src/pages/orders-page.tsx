@@ -850,9 +850,9 @@ export default function OrdersPage() {
           </DialogHeader>
           
           {selectedOrder && (
-            <div className="space-y-6">
+            <div className="space-y-2">
               {/* Encabezado con datos de la empresa */}
-              <div className="flex justify-between items-center border-b pb-4 print:flex">
+              <div className="flex justify-between items-center border-b pb-2 print:flex">
                 <div className="flex items-center gap-2 max-w-[60%]">
                   {companySettings?.logoUrl && (
                     <div className="w-16 h-16 flex-shrink-0">
@@ -877,7 +877,7 @@ export default function OrdersPage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <h3 className="text-xs font-medium text-muted-foreground">Cliente</h3>
                   <p className="text-sm">{getClientName(selectedOrder.clientId)}</p>
@@ -941,7 +941,7 @@ export default function OrdersPage() {
                   </div>
                 )}
                 
-                <div className="col-span-2 grid grid-cols-2 gap-4">
+                <div className="col-span-2 grid grid-cols-2 gap-2">
                   {selectedOrder.clientSignature && (
                     <div>
                       <h3 className="text-xs font-medium text-muted-foreground mb-2">Firma del Cliente</h3>
