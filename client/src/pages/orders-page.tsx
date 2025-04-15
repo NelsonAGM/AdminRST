@@ -833,7 +833,10 @@ export default function OrdersPage() {
       {/* Order details dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto DialogContent">
-          <DialogHeader className="flex justify-end items-center">
+          <DialogHeader className="flex justify-between items-center">
+            <DialogTitle className="sr-only">Detalles de Orden</DialogTitle>
+            <DialogDescription className="sr-only">Información de la orden de servicio</DialogDescription>
+            <div></div> {/* Elemento vacío para mantener justify-between */}
             <Button 
               variant="outline" 
               size="sm" 
@@ -874,58 +877,58 @@ export default function OrdersPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Cliente</h3>
-                  <p className="text-lg">{getClientName(selectedOrder.clientId)}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Cliente</h3>
+                  <p className="text-sm">{getClientName(selectedOrder.clientId)}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Equipo</h3>
-                  <p className="text-lg">{getEquipmentName(selectedOrder.equipmentId)}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Equipo</h3>
+                  <p className="text-sm">{getEquipmentName(selectedOrder.equipmentId)}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Estado</h3>
-                  <Badge variant="outline" className={getStatusDisplay(selectedOrder.status).className}>
+                  <h3 className="text-xs font-medium text-muted-foreground">Estado</h3>
+                  <Badge variant="outline" className={getStatusDisplay(selectedOrder.status).className + " text-xs"}>
                     {getStatusDisplay(selectedOrder.status).label}
                   </Badge>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Técnico</h3>
-                  <p className="text-lg">{getTechnicianName(selectedOrder.technicianId)}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Técnico</h3>
+                  <p className="text-sm">{getTechnicianName(selectedOrder.technicianId)}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Fecha de Solicitud</h3>
-                  <p className="text-lg">{format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Fecha de Solicitud</h3>
+                  <p className="text-sm">{format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Fecha Estimada de Entrega</h3>
-                  <p className="text-lg">
+                  <h3 className="text-xs font-medium text-muted-foreground">Fecha Estimada de Entrega</h3>
+                  <p className="text-sm">
                     {selectedOrder.expectedDeliveryDate
                       ? format(new Date(selectedOrder.expectedDeliveryDate), "PPP", { locale: es })
                       : "No especificada"}
                   </p>
                 </div>
                 <div className="col-span-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">Descripción</h3>
-                  <p className="text-lg">{selectedOrder.description}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Descripción</h3>
+                  <p className="text-sm">{selectedOrder.description}</p>
                 </div>
                 <div className="col-span-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">Notas</h3>
-                  <p className="text-lg">{selectedOrder.notes || "Sin notas"}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Notas</h3>
+                  <p className="text-sm">{selectedOrder.notes || "Sin notas"}</p>
                 </div>
                 <div className="col-span-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">Materiales Utilizados</h3>
-                  <p className="text-lg whitespace-pre-line">{selectedOrder.materialsUsed || "Sin materiales registrados"}</p>
+                  <h3 className="text-xs font-medium text-muted-foreground">Materiales Utilizados</h3>
+                  <p className="text-sm whitespace-pre-line">{selectedOrder.materialsUsed || "Sin materiales registrados"}</p>
                 </div>
 
                 <div className="col-span-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">Costo del Servicio</h3>
-                  <p className="text-lg font-semibold">
+                  <h3 className="text-xs font-medium text-muted-foreground">Costo del Servicio</h3>
+                  <p className="text-sm font-semibold">
                     {selectedOrder.cost ? `$${selectedOrder.cost.toLocaleString()}` : "No especificado"}
                   </p>
                 </div>
                 
                 {selectedOrder.photos && selectedOrder.photos.length > 0 && (
                   <div className="col-span-2">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Fotografías</h3>
+                    <h3 className="text-xs font-medium text-muted-foreground mb-2">Fotografías</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {selectedOrder.photos.map((photo, index) => (
                         <div key={index} className="border rounded-md overflow-hidden">
@@ -939,15 +942,15 @@ export default function OrdersPage() {
                 <div className="col-span-2 grid grid-cols-2 gap-4">
                   {selectedOrder.clientSignature && (
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Firma del Cliente</h3>
-                      <div className="border rounded-md p-2 bg-white max-w-xs h-24">
+                      <h3 className="text-xs font-medium text-muted-foreground mb-2">Firma del Cliente</h3>
+                      <div className="border rounded-md p-2 bg-white max-w-xs h-20">
                         <img src={selectedOrder.clientSignature} alt="Firma del cliente" className="w-full h-full object-contain" />
                       </div>
                     </div>
                   )}
                   
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2 bg-blue-900 text-white p-1">TÉRMINOS Y CONDICIONES</h3>
+                    <h3 className="text-xs font-medium text-muted-foreground mb-2 bg-blue-900 text-white p-1">TÉRMINOS Y CONDICIONES</h3>
                     <div className="text-xs">
                       <p>1. La presente cotización tiene una vigencia de 7 días naturales.</p>
                       <p>2. Para importes mayores a $5,000.00 (cinco mil pesos M.N), se requiere el 50% de anticipo.</p>
