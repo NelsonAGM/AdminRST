@@ -4,7 +4,8 @@ import {
   technicians, type Technician, type InsertTechnician,
   equipment, type Equipment, type InsertEquipment,
   serviceOrders, type ServiceOrder, type InsertServiceOrder, type UpdateServiceOrder,
-  companySettings, type CompanySettings, type InsertCompanySettings
+  companySettings, type CompanySettings, type InsertCompanySettings,
+  monthlyRevenue, type MonthlyRevenue, type InsertMonthlyRevenue
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -378,6 +379,96 @@ export class DatabaseStorage implements IStorage {
       return newSettings;
     }
   }
+  
+  // Monthly Revenue methods
+  async getMonthlyRevenue(year: number, month: number): Promise<MonthlyRevenue | undefined> {
+    const [revenue] = await db.select()
+      .from(monthlyRevenue)
+      .where(and(
+        eq(monthlyRevenue.year, year),
+        eq(monthlyRevenue.month, month)
+      ));
+    return revenue;
+  }
+  
+  async getMonthlyRevenuesByYear(year: number): Promise<MonthlyRevenue[]> {
+    return await db.select()
+      .from(monthlyRevenue)
+      .where(eq(monthlyRevenue.year, year))
+      .orderBy(monthlyRevenue.month);
+  }
+  
+  async updateMonthlyRevenue(year: number, month: number, data: Partial<InsertMonthlyRevenue>): Promise<MonthlyRevenue> {
+    const existingRevenue = await this.getMonthlyRevenue(year, month);
+    
+    if (existingRevenue) {
+      // Update existing record
+      const [updatedRevenue] = await db.update(monthlyRevenue)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(monthlyRevenue.year, year),
+          eq(monthlyRevenue.month, month)
+        ))
+        .returning();
+      
+      return updatedRevenue;
+    } else {
+      // Create new record
+      const [newRevenue] = await db.insert(monthlyRevenue)
+        .values({
+          year,
+          month,
+          ...data,
+        })
+        .returning();
+      
+      return newRevenue;
+    }
+  }
+  
+  async calculateCurrentMonthRevenue(): Promise<MonthlyRevenue> {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+    
+    // Get all completed orders for current month
+    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
+    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+    
+    // Get all completed orders in the current month with cost
+    const orders = await db.select({
+      cost: serviceOrders.cost
+    })
+    .from(serviceOrders)
+    .where(and(
+      sql`${serviceOrders.status} = 'completed'`,
+      sql`${serviceOrders.completionDate} >= ${startOfMonth}`,
+      sql`${serviceOrders.completionDate} <= ${endOfMonth}`,
+      sql`${serviceOrders.cost} IS NOT NULL`
+    ));
+    
+    // Calculate total amount and order count
+    const orderCount = orders.length;
+    const totalAmount = orders.reduce((sum, order) => sum + (order.cost || 0), 0);
+    const averageOrderValue = orderCount > 0 ? totalAmount / orderCount : 0;
+    
+    // Update or create monthly revenue record
+    return this.updateMonthlyRevenue(currentYear, currentMonth, {
+      totalAmount: totalAmount.toString(), // Convert to string for decimal
+      orderCount,
+      averageOrderValue: averageOrderValue.toString() // Convert to string for decimal
+    });
+  }
+  
+  async getRevenueHistory(limit: number): Promise<MonthlyRevenue[]> {
+    return await db.select()
+      .from(monthlyRevenue)
+      .orderBy(sql`${monthlyRevenue.year} DESC, ${monthlyRevenue.month} DESC`)
+      .limit(limit);
+  }
 }
 
 // Memory Storage Implementation - keeping this for reference
@@ -742,6 +833,97 @@ export class MemStorage implements IStorage {
     
     this.companySettingsData.set(1, updatedSettings);
     return updatedSettings;
+  }
+
+  // Monthly Revenue methods (implementation for in-memory storage)
+  private monthlyRevenueData: Map<string, MonthlyRevenue> = new Map();
+  private monthlyRevenueCurrentId: number = 1;
+
+  async getMonthlyRevenue(year: number, month: number): Promise<MonthlyRevenue | undefined> {
+    const key = `${year}-${month}`;
+    return this.monthlyRevenueData.get(key);
+  }
+  
+  async getMonthlyRevenuesByYear(year: number): Promise<MonthlyRevenue[]> {
+    return Array.from(this.monthlyRevenueData.values())
+      .filter(revenue => revenue.year === year)
+      .sort((a, b) => a.month - b.month);
+  }
+  
+  async updateMonthlyRevenue(year: number, month: number, data: Partial<InsertMonthlyRevenue>): Promise<MonthlyRevenue> {
+    const key = `${year}-${month}`;
+    const existingRevenue = this.monthlyRevenueData.get(key);
+    
+    if (existingRevenue) {
+      const updatedRevenue: MonthlyRevenue = {
+        ...existingRevenue,
+        ...data,
+        updatedAt: new Date()
+      };
+      this.monthlyRevenueData.set(key, updatedRevenue);
+      return updatedRevenue;
+    } else {
+      const id = this.monthlyRevenueCurrentId++;
+      const totalAmount = data.totalAmount || "0";
+      const orderCount = data.orderCount || 0;
+      const averageOrderValue = data.averageOrderValue || "0";
+      
+      const newRevenue: MonthlyRevenue = {
+        id,
+        year,
+        month,
+        totalAmount,
+        orderCount,
+        averageOrderValue,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      this.monthlyRevenueData.set(key, newRevenue);
+      return newRevenue;
+    }
+  }
+  
+  async calculateCurrentMonthRevenue(): Promise<MonthlyRevenue> {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    // Get all completed orders for current month with a cost
+    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
+    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+    
+    const orders = Array.from(this.serviceOrdersData.values())
+      .filter(order => 
+        order.status === 'completed' && 
+        order.completionDate &&
+        order.completionDate >= startOfMonth &&
+        order.completionDate <= endOfMonth &&
+        order.cost !== null && 
+        order.cost !== undefined
+      );
+    
+    const orderCount = orders.length;
+    const totalAmount = orders.reduce((sum, order) => sum + (order.cost || 0), 0);
+    const averageOrderValue = orderCount > 0 ? totalAmount / orderCount : 0;
+    
+    return this.updateMonthlyRevenue(currentYear, currentMonth, {
+      totalAmount: totalAmount.toString(),
+      orderCount,
+      averageOrderValue: averageOrderValue.toString()
+    });
+  }
+  
+  async getRevenueHistory(limit: number): Promise<MonthlyRevenue[]> {
+    return Array.from(this.monthlyRevenueData.values())
+      .sort((a, b) => {
+        // Ordenar primero por año (descendente) y luego por mes (descendente)
+        if (a.year !== b.year) {
+          return b.year - a.year;
+        }
+        return b.month - a.month;
+      })
+      .slice(0, limit);
   }
 }
 

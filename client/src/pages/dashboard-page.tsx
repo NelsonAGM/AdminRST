@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { StatsCard } from "@/components/ui/stats-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, CheckCircle, Clock, Users, ClipboardList } from "lucide-react";
+import { LayoutDashboard, CheckCircle, Clock, Users, ClipboardList, DollarSign, BarChart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,11 @@ interface DashboardStats {
   completedPercentage: number;
   newClientsThisMonth: number;
   availableTechnicians: number;
+  currentMonthRevenue?: {
+    totalAmount: string;
+    orderCount: number;
+    averageOrderValue: string;
+  };
 }
 
 interface ServiceOrder {
@@ -54,6 +59,12 @@ export default function DashboardPage() {
   // Fetch technicians status
   const { data: technicians, isLoading: isLoadingTechnicians } = useQuery<TechnicianStatus[]>({
     queryKey: ["/api/dashboard/technicians-status"],
+  });
+  
+  // Fetch current month revenue
+  const { data: currentMonthRevenue, isLoading: isLoadingRevenue } = useQuery({
+    queryKey: ["/api/revenue/current"],
+    enabled: true,
   });
   
   // Columns for recent orders table
@@ -196,6 +207,69 @@ export default function DashboardPage() {
             />
           </>
         )}
+      </div>
+      
+      {/* Financial Stats */}
+      <div className="mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">Resumen Financiero del Mes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingRevenue ? (
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <Skeleton className="h-24 w-full md:w-1/3" />
+                <Skeleton className="h-24 w-full md:w-1/3" />
+                <Skeleton className="h-24 w-full md:w-1/3" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col items-center justify-center p-6 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="p-3 rounded-full bg-blue-100 mb-3">
+                    <DollarSign className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-blue-900">Ingresos Totales</h3>
+                  <p className="text-3xl font-bold text-primary">
+                    ${parseFloat(currentMonthRevenue?.totalAmount || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-sm text-gray-500">Mes actual</p>
+                </div>
+                
+                <div className="flex flex-col items-center justify-center p-6 bg-green-50 rounded-lg border border-green-100">
+                  <div className="p-3 rounded-full bg-green-100 mb-3">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-green-900">Órdenes Completadas</h3>
+                  <p className="text-3xl font-bold text-green-600">
+                    {currentMonthRevenue?.orderCount || 0}
+                  </p>
+                  <p className="text-sm text-gray-500">Servicios facturados</p>
+                </div>
+                
+                <div className="flex flex-col items-center justify-center p-6 bg-amber-50 rounded-lg border border-amber-100">
+                  <div className="p-3 rounded-full bg-amber-100 mb-3">
+                    <BarChart className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-amber-900">Valor Promedio</h3>
+                  <p className="text-3xl font-bold text-amber-600">
+                    ${parseFloat(currentMonthRevenue?.averageOrderValue || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-sm text-gray-500">Por orden de servicio</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outline"
+                className="text-primary"
+                onClick={() => setLocation('/finance')}
+              >
+                Ver historial financiero →
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       
       {/* Recent Orders and Technician Status */}

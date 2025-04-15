@@ -740,6 +740,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Datos inválidos", error });
     }
   });
+
+  // Monthly Revenue routes
+  app.get("/api/revenue/current", ensureAdmin, async (req, res) => {
+    try {
+      // Calcular y obtener los ingresos del mes actual
+      const revenue = await storage.calculateCurrentMonthRevenue();
+      res.json(revenue);
+    } catch (error) {
+      console.error("Error al obtener ingresos actuales:", error);
+      res.status(500).json({ message: "Error al obtener ingresos actuales" });
+    }
+  });
+
+  app.get("/api/revenue/history", ensureAdmin, async (req, res) => {
+    try {
+      // Obtener el historial de ingresos (limitar a los últimos 12 meses)
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 12;
+      const history = await storage.getRevenueHistory(limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error al obtener historial de ingresos:", error);
+      res.status(500).json({ message: "Error al obtener historial de ingresos" });
+    }
+  });
+
+  app.get("/api/revenue/year/:year", ensureAdmin, async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      if (isNaN(year)) {
+        return res.status(400).json({ message: "Año inválido" });
+      }
+
+      const revenueData = await storage.getMonthlyRevenuesByYear(year);
+      res.json(revenueData);
+    } catch (error) {
+      console.error("Error al obtener ingresos por año:", error);
+      res.status(500).json({ message: "Error al obtener ingresos por año" });
+    }
+  });
   
   const httpServer = createServer(app);
   return httpServer;
