@@ -116,16 +116,7 @@ export default function OrdersPage() {
     },
   });
   
-  // Form for updating order status
-  const statusForm = useForm<z.infer<typeof updateServiceOrderSchema>>({
-    resolver: zodResolver(updateServiceOrderSchema),
-    defaultValues: {
-      status: "pending",
-      notes: "",
-      technicianId: null,
-      completionDate: null,
-    },
-  });
+
   
   // Reset form when opening for a new order
   const handleAddOrder = () => {
@@ -171,15 +162,9 @@ export default function OrdersPage() {
     });
   };
   
-  // View order details and set up status form
+  // View order details
   const handleViewOrder = (order: ServiceOrder) => {
     setSelectedOrder(order);
-    statusForm.reset({
-      status: order.status,
-      notes: order.notes || "",
-      technicianId: order.technicianId,
-      completionDate: order.completionDate ? new Date(order.completionDate) : null,
-    });
     setIsDetailsOpen(true);
   };
   
@@ -360,18 +345,7 @@ export default function OrdersPage() {
     }
   };
   
-  // Handle status form submission
-  const onStatusSubmit = (data: z.infer<typeof updateServiceOrderSchema>) => {
-    if (selectedOrder) {
-      // If completing the order, set completion date
-      const updatedData = { ...data };
-      if (data.status === 'completed' && !data.completionDate) {
-        updatedData.completionDate = new Date();
-      }
-      
-      updateStatusMutation.mutate({ id: selectedOrder.id, data: updatedData });
-    }
-  };
+
   
   // Get client name from client ID
   const getClientName = (clientId: number) => {
@@ -959,95 +933,11 @@ export default function OrdersPage() {
               </div>
               
               <div className="print:hidden border-t pt-4">
-                <Form {...statusForm}>
-                  <form onSubmit={statusForm.handleSubmit(onStatusSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={statusForm.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Estado</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="pending">Pendiente</SelectItem>
-                                <SelectItem value="in_progress">En Proceso</SelectItem>
-                                <SelectItem value="completed">Completado</SelectItem>
-                                <SelectItem value="cancelled">Cancelado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={statusForm.control}
-                        name="technicianId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Técnico Asignado</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
-                              defaultValue={field.value ? field.value.toString() : "null"}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="null">Sin asignar</SelectItem>
-                                {technicians?.map(tech => (
-                                  <SelectItem key={tech.id} value={tech.id.toString()}>
-                                    {tech.specialization}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <FormField
-                      control={statusForm.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notas</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              {...field} 
-                              placeholder="Notas adicionales sobre la orden"
-                              rows={3}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="flex justify-end space-x-2">
-                      <DialogClose asChild>
-                        <Button variant="outline">Cerrar</Button>
-                      </DialogClose>
-                      <Button type="submit">
-                        Actualizar Estado
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
+                <div className="flex justify-end space-x-2">
+                  <DialogClose asChild>
+                    <Button variant="outline">Cerrar</Button>
+                  </DialogClose>
+                </div>
               </div>
             </div>
           )}
