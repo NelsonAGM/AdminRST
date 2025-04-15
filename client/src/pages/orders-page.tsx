@@ -837,14 +837,16 @@ export default function OrdersPage() {
             <DialogTitle className="sr-only">Detalles de Orden</DialogTitle>
             <DialogDescription className="sr-only">Información de la orden de servicio</DialogDescription>
             <div></div> {/* Elemento vacío para mantener justify-between */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => window.print()}
-              className="print:hidden"
-            >
-              <Printer className="h-4 w-4 mr-2" /> Imprimir
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.print()}
+                className="print:hidden"
+              >
+                <Printer className="h-4 w-4 mr-2" /> Imprimir
+              </Button>
+            </div>
           </DialogHeader>
           
           {selectedOrder && (

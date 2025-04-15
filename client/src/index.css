@@ -17,13 +17,54 @@
   }
   
   .DialogContent {
-    position: absolute;
+    position: static !important;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 100% !important;
+    height: auto !important;
     background-color: white;
     box-shadow: none;
     transform: none !important;
+    overflow: visible !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 15px !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Configuración de página para impresión */
+  @page {
+    size: auto;
+    margin: 10mm;
+  }
+  
+  /* Ajustes para múltiples páginas */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Permitir que el contenido fluya entre páginas */
+  .space-y-6 {
+    display: block !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+  }
+  
+  /* Ajustes para la grid */
+  .grid {
+    page-break-inside: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Evitar cortes dentro de elementos importantes */
+  .grid > div {
+    page-break-inside: avoid !important;
+  }
+  
+  /* Mantener juntos elementos como firma y términos */
+  .col-span-2 {
+    page-break-inside: auto !important;
   }
 }
 
