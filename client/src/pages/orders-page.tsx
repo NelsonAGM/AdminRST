@@ -833,13 +833,7 @@ export default function OrdersPage() {
       {/* Order details dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto DialogContent">
-          <DialogHeader className="flex justify-between items-center">
-            <div>
-              <DialogTitle>Detalles de la Orden #{selectedOrder?.orderNumber}</DialogTitle>
-              <DialogDescription>
-                Información completa de la orden de servicio y opciones de actualización.
-              </DialogDescription>
-            </div>
+          <DialogHeader className="flex justify-end items-center">
             <Button 
               variant="outline" 
               size="sm" 
