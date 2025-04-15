@@ -80,6 +80,13 @@ export interface IStorage {
   getCompanySettings(): Promise<CompanySettings | undefined>;
   updateCompanySettings(settingsData: InsertCompanySettings): Promise<CompanySettings>;
 
+  // Monthly Revenue operations
+  getMonthlyRevenue(year: number, month: number): Promise<MonthlyRevenue | undefined>;
+  getMonthlyRevenuesByYear(year: number): Promise<MonthlyRevenue[]>;
+  updateMonthlyRevenue(year: number, month: number, data: Partial<InsertMonthlyRevenue>): Promise<MonthlyRevenue>;
+  calculateCurrentMonthRevenue(): Promise<MonthlyRevenue>;
+  getRevenueHistory(limit: number): Promise<MonthlyRevenue[]>;
+
   // Session store
   sessionStore: session.Store;
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, pgEnum, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -92,6 +92,18 @@ export const companySettings = pgTable("company_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Monthly Revenue table - to track financial data by month
+export const monthlyRevenue = pgTable("monthly_revenue", {
+  id: serial("id").primaryKey(),
+  year: integer("year").notNull(),
+  month: integer("month").notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  orderCount: integer("order_count").notNull().default(0),
+  averageOrderValue: decimal("average_order_value", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+});
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
@@ -139,6 +151,12 @@ export const insertCompanySettingsSchema = createInsertSchema(companySettings).o
   updatedAt: true 
 });
 
+export const insertMonthlyRevenueSchema = createInsertSchema(monthlyRevenue).omit({
+  id: true,
+  createdAt: true, 
+  updatedAt: true
+});
+
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
@@ -159,3 +177,6 @@ export type ServiceOrder = typeof serviceOrders.$inferSelect;
 
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 export type CompanySettings = typeof companySettings.$inferSelect;
+
+export type InsertMonthlyRevenue = z.infer<typeof insertMonthlyRevenueSchema>;
+export type MonthlyRevenue = typeof monthlyRevenue.$inferSelect;
