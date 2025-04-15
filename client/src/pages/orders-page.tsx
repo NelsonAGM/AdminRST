@@ -855,7 +855,7 @@ export default function OrdersPage() {
               <div className="flex justify-between items-center border-b pb-2 print:flex">
                 <div className="flex items-center gap-2 max-w-[60%]">
                   {companySettings?.logoUrl && (
-                    <div className="w-16 h-16 flex-shrink-0">
+                    <div className="w-12 h-12 flex-shrink-0">
                       <img 
                         src={companySettings.logoUrl} 
                         alt={companySettings.name} 
@@ -871,8 +871,8 @@ export default function OrdersPage() {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0 ml-4">
-                  <h3 className="font-bold text-lg">ORDEN DE SERVICIO</h3>
-                  <p className="text-xl font-bold text-blue-900">#{selectedOrder.orderNumber}</p>
+                  <h3 className="font-bold text-base">ORDEN DE SERVICIO</h3>
+                  <p className="text-lg font-bold text-blue-900">#{selectedOrder.orderNumber}</p>
                   <p className="text-xs">Fecha: {format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
                 </div>
               </div>
@@ -931,10 +931,10 @@ export default function OrdersPage() {
                 {selectedOrder.photos && selectedOrder.photos.length > 0 && (
                   <div className="col-span-2">
                     <h3 className="text-xs font-medium text-muted-foreground mb-2">Fotografías</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {selectedOrder.photos.map((photo, index) => (
-                        <div key={index} className="border rounded-md overflow-hidden">
-                          <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-auto" />
+                        <div key={index} className="border rounded-md overflow-hidden h-14">
+                          <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
                         </div>
                       ))}
                     </div>
