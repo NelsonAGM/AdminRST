@@ -434,55 +434,37 @@ export class DatabaseStorage implements IStorage {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
     
-    // Get all orders for current month - both completed and in progress with costs
-    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
-    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
-    
     console.log("Calculando ingresos para", currentYear, currentMonth);
-    console.log("Período:", startOfMonth, "a", endOfMonth);
     
-    // Primera consulta - incluir órdenes completadas usando completionDate
-    const completedOrders = await db.select({
-      id: serviceOrders.id,
-      orderNumber: serviceOrders.orderNumber, 
-      cost: serviceOrders.cost
-    })
-    .from(serviceOrders)
-    .where(and(
-      sql`${serviceOrders.status} = 'completed'`,
-      sql`${serviceOrders.completionDate} >= ${startOfMonth}`,
-      sql`${serviceOrders.completionDate} <= ${endOfMonth}`,
-      sql`${serviceOrders.cost} IS NOT NULL`
-    ));
-    
-    console.log("Órdenes completadas:", completedOrders.length);
-    
-    // Segunda consulta - incluir todas las órdenes creadas este mes que tengan costo
-    const allOrdersWithCost = await db.select({
+    // Obtener todas las órdenes con costo (sin filtrar por fecha inicialmente)
+    const allOrders = await db.select({
       id: serviceOrders.id,
       orderNumber: serviceOrders.orderNumber,
       status: serviceOrders.status,
-      cost: serviceOrders.cost
+      cost: serviceOrders.cost,
+      createdAt: serviceOrders.createdAt
     })
     .from(serviceOrders)
-    .where(and(
-      sql`${serviceOrders.createdAt} >= ${startOfMonth}`,
-      sql`${serviceOrders.createdAt} <= ${endOfMonth}`,
+    .where(
       sql`${serviceOrders.cost} IS NOT NULL`
-    ));
+    );
     
-    console.log("Todas las órdenes con costo del mes:", allOrdersWithCost.length);
+    console.log("Total de órdenes con costo:", allOrders.length);
     
-    // Combinar y eliminar duplicados para evitar contar dos veces las órdenes completadas
-    const completedOrderIds = new Set(completedOrders.map(order => order.id));
-    const remainingOrders = allOrdersWithCost.filter(order => !completedOrderIds.has(order.id));
-    const allOrders = [...completedOrders, ...remainingOrders];
+    // Filtrar manualmente por el mes actual
+    const startOfMonth = new Date(currentYear, currentMonth - 1, 1).getTime();
+    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).getTime();
     
-    console.log("Total de órdenes consideradas:", allOrders.length);
+    const ordersForCurrentMonth = allOrders.filter(order => {
+      const orderDate = new Date(order.createdAt).getTime();
+      return orderDate >= startOfMonth && orderDate <= endOfMonth;
+    });
+    
+    console.log("Órdenes del mes actual:", ordersForCurrentMonth.length);
     
     // Calculate total amount and order count
-    const orderCount = allOrders.length;
-    const totalAmount = allOrders.reduce((sum, order) => sum + (order.cost || 0), 0);
+    const orderCount = ordersForCurrentMonth.length;
+    const totalAmount = ordersForCurrentMonth.reduce((sum, order) => sum + (order.cost || 0), 0);
     const averageOrderValue = orderCount > 0 ? totalAmount / orderCount : 0;
     
     console.log("Monto total:", totalAmount);
