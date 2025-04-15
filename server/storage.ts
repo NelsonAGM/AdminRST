@@ -434,12 +434,17 @@ export class DatabaseStorage implements IStorage {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
     
-    // Get all completed orders for current month
+    // Get all orders for current month - both completed and in progress with costs
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
     const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
     
-    // Get all completed orders in the current month with cost
-    const orders = await db.select({
+    console.log("Calculando ingresos para", currentYear, currentMonth);
+    console.log("Período:", startOfMonth, "a", endOfMonth);
+    
+    // Primera consulta - incluir órdenes completadas usando completionDate
+    const completedOrders = await db.select({
+      id: serviceOrders.id,
+      orderNumber: serviceOrders.orderNumber, 
       cost: serviceOrders.cost
     })
     .from(serviceOrders)
@@ -450,10 +455,39 @@ export class DatabaseStorage implements IStorage {
       sql`${serviceOrders.cost} IS NOT NULL`
     ));
     
+    console.log("Órdenes completadas:", completedOrders.length);
+    
+    // Segunda consulta - incluir todas las órdenes creadas este mes que tengan costo
+    const allOrdersWithCost = await db.select({
+      id: serviceOrders.id,
+      orderNumber: serviceOrders.orderNumber,
+      status: serviceOrders.status,
+      cost: serviceOrders.cost
+    })
+    .from(serviceOrders)
+    .where(and(
+      sql`${serviceOrders.createdAt} >= ${startOfMonth}`,
+      sql`${serviceOrders.createdAt} <= ${endOfMonth}`,
+      sql`${serviceOrders.cost} IS NOT NULL`
+    ));
+    
+    console.log("Todas las órdenes con costo del mes:", allOrdersWithCost.length);
+    
+    // Combinar y eliminar duplicados para evitar contar dos veces las órdenes completadas
+    const completedOrderIds = new Set(completedOrders.map(order => order.id));
+    const remainingOrders = allOrdersWithCost.filter(order => !completedOrderIds.has(order.id));
+    const allOrders = [...completedOrders, ...remainingOrders];
+    
+    console.log("Total de órdenes consideradas:", allOrders.length);
+    
     // Calculate total amount and order count
-    const orderCount = orders.length;
-    const totalAmount = orders.reduce((sum, order) => sum + (order.cost || 0), 0);
+    const orderCount = allOrders.length;
+    const totalAmount = allOrders.reduce((sum, order) => sum + (order.cost || 0), 0);
     const averageOrderValue = orderCount > 0 ? totalAmount / orderCount : 0;
+    
+    console.log("Monto total:", totalAmount);
+    console.log("Cantidad de órdenes:", orderCount);
+    console.log("Valor promedio:", averageOrderValue);
     
     // Update or create monthly revenue record
     return this.updateMonthlyRevenue(currentYear, currentMonth, {
