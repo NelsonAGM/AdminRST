@@ -931,10 +931,10 @@ export default function OrdersPage() {
                 {selectedOrder.photos && selectedOrder.photos.length > 0 && (
                   <div className="col-span-2">
                     <h3 className="text-xs font-medium text-muted-foreground mb-2">Fotografías</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {selectedOrder.photos.map((photo, index) => (
-                        <div key={index} className="border rounded-md overflow-hidden h-14">
-                          <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
+                        <div key={index} className="border rounded-md overflow-hidden">
+                          <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-auto" />
                         </div>
                       ))}
                     </div>
