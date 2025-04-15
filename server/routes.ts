@@ -605,6 +605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/users", ensureAdmin, async (req, res) => {
     try {
+      console.log("Recibiendo datos de usuario:", JSON.stringify(req.body));
+      
       const validatedData = insertUserSchema.parse(req.body);
       
       // Check if username already exists
@@ -624,7 +626,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(userWithoutPassword);
     } catch (error) {
-      res.status(400).json({ message: "Datos inválidos", error });
+      console.error("Error al crear usuario:", error);
+      if (error.errors) {
+        res.status(400).json({ message: "Datos inválidos", error: error.errors });
+      } else if (error.issues) {
+        res.status(400).json({ message: "Datos inválidos", error: error.issues });
+      } else {
+        res.status(400).json({ message: "Datos inválidos", error: error.message || error });
+      }
     }
   });
   
