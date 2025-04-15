@@ -104,6 +104,9 @@ export function Sidebar({ onLinkClick }: SidebarProps) {
         
         {user?.role === "admin" && (
           <>
+            <SidebarItem href="/finance" icon={<DollarSign className="h-5 w-5" />} onClick={onLinkClick}>
+              Finanzas
+            </SidebarItem>
             <SidebarItem href="/users" icon={<UserCog className="h-5 w-5" />} onClick={onLinkClick}>
               Usuarios
             </SidebarItem>
