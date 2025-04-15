@@ -615,10 +615,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "El nombre de usuario ya existe" });
       }
       
+      // Extraer confirmPassword antes de crear el usuario
+      const { confirmPassword, ...userData } = validatedData;
+      
       // Create user with hashed password
       const user = await storage.createUser({
-        ...validatedData,
-        password: await hashPassword(validatedData.password),
+        ...userData,
+        password: await hashPassword(userData.password),
       });
       
       // Remove password from response

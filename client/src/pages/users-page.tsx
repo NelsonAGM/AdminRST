@@ -114,8 +114,8 @@ export default function UsersPage() {
   // Create user mutation
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof extendedUserSchema>) => {
-      const { confirmPassword, ...userData } = data;
-      const res = await apiRequest("POST", "/api/users", userData);
+      // Enviar todos los campos, incluyendo confirmPassword
+      const res = await apiRequest("POST", "/api/users", data);
       return res.json();
     },
     onSuccess: () => {
