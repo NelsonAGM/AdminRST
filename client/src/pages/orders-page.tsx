@@ -853,10 +853,10 @@ export default function OrdersPage() {
           {selectedOrder && (
             <div className="space-y-6">
               {/* Encabezado con datos de la empresa */}
-              <div className="flex justify-between items-center border-b pb-4 print:block">
-                <div className="flex items-center gap-3">
+              <div className="flex justify-between items-center border-b pb-4 print:flex">
+                <div className="flex items-center gap-2 max-w-[60%]">
                   {companySettings?.logoUrl && (
-                    <div className="w-20 h-20">
+                    <div className="w-16 h-16 flex-shrink-0">
                       <img 
                         src={companySettings.logoUrl} 
                         alt={companySettings.name} 
@@ -864,17 +864,17 @@ export default function OrdersPage() {
                       />
                     </div>
                   )}
-                  <div>
-                    <h2 className="text-xl font-bold text-blue-900">{companySettings?.name || "Sistemas RST"}</h2>
-                    <p className="text-sm">{companySettings?.address || ""}</p>
-                    <p className="text-sm">Tel: {companySettings?.phone || ""}</p>
-                    <p className="text-sm">Email: {companySettings?.email || ""}</p>
+                  <div className="flex-shrink-1 min-w-0">
+                    <h2 className="text-lg font-bold text-blue-900 truncate">{companySettings?.name || "Sistemas RST"}</h2>
+                    <p className="text-xs truncate">{companySettings?.address || ""}</p>
+                    <p className="text-xs truncate">Tel: {companySettings?.phone || ""}</p>
+                    <p className="text-xs truncate">Email: {companySettings?.email || ""}</p>
                   </div>
                 </div>
-                <div className="text-right print:mt-2">
+                <div className="text-right flex-shrink-0 ml-4">
                   <h3 className="font-bold text-lg">ORDEN DE SERVICIO</h3>
                   <p className="text-xl font-bold text-blue-900">#{selectedOrder.orderNumber}</p>
-                  <p className="text-sm">Fecha: {format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
+                  <p className="text-xs">Fecha: {format(new Date(selectedOrder.requestDate), "PPP", { locale: es })}</p>
                 </div>
               </div>
               
