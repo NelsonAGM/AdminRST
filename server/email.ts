@@ -63,19 +63,42 @@ export async function sendEmail(content: EmailContent): Promise<boolean> {
     
     const transporter = createTransporter();
     
-    const info = await transporter.sendMail({
+    // Añadir más información de depuración
+    console.log(`Usando servidor de correo: ${emailHost}:${emailPort}`);
+    console.log(`Usuario de correo: ${emailUser}`);
+    console.log(`Dirección de origen: ${emailFromAddress}`);
+    
+    const mailOptions = {
       from: `"Sistemas RST" <${emailFromAddress}>`,
       to: content.to,
       subject: content.subject,
       text: content.text,
       html: content.html,
-    });
+    };
+    
+    console.log(`Opciones de correo: ${JSON.stringify({
+      ...mailOptions,
+      // No mostrar el HTML completo para no saturar los logs
+      html: mailOptions.html ? '(contenido HTML presente)' : undefined
+    })}`);
+    
+    const info = await transporter.sendMail(mailOptions);
     
     console.log(`Correo enviado correctamente: ${info.messageId}`);
+    if (info.accepted && info.accepted.length > 0) {
+      console.log(`Direcciones aceptadas: ${info.accepted.join(', ')}`);
+    }
+    if (info.rejected && info.rejected.length > 0) {
+      console.log(`Direcciones rechazadas: ${info.rejected.join(', ')}`);
+    }
     
     return true;
   } catch (error) {
     console.error('Error al enviar correo electrónico:', error);
+    if (error instanceof Error) {
+      console.error(`Mensaje de error: ${error.message}`);
+      console.error(`Stack: ${error.stack}`);
+    }
     console.error(JSON.stringify(error, null, 2));
     return false;
   }
