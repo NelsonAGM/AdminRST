@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import React, { useState, useEffect, type ChangeEvent } from "react";
 import { DashboardLayout } from "@/components/ui/dashboard-layout";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -328,6 +328,7 @@ export default function OrdersPage() {
     }
     
     // Convertimos el ExtendedServiceOrder a InsertServiceOrder para la mutación
+    // Si el estado es "warranty" (garantía), establecemos el costo automáticamente a 0
     const insertData: InsertServiceOrder = {
       clientId: Number(data.clientId),
       equipmentId: Number(data.equipmentId),
@@ -341,7 +342,8 @@ export default function OrdersPage() {
       photos: data.photos,
       clientApproval: data.clientApproval,
       clientApprovalDate: data.clientApprovalDate,
-      cost: data.cost,
+      // En caso de garantía, el costo siempre es 0
+      cost: data.status === 'warranty' ? 0 : data.cost,
     };
     
     if (orderToEdit) {
@@ -694,23 +696,39 @@ export default function OrdersPage() {
                 <FormField
                   control={form.control}
                   name="cost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Costo del Servicio</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          placeholder="Monto en pesos"
-                          value={field.value || ""}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : null)}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Ingrese el costo total del servicio sin usar puntos ni comas
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    // Obtener el estado actual
+                    const currentStatus = form.watch("status");
+                    const isWarranty = currentStatus === "warranty";
+                    
+                    // Si es garantía, establecer el valor del campo a 0
+                    React.useEffect(() => {
+                      if (isWarranty) {
+                        field.onChange(0);
+                      }
+                    }, [isWarranty, field]);
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Costo del Servicio</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number"
+                            placeholder={isWarranty ? "0" : "Monto en pesos"}
+                            value={isWarranty ? "0" : field.value || ""}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : null)}
+                            disabled={isWarranty}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {isWarranty 
+                            ? "Servicios en garantía tienen costo cero automáticamente" 
+                            : "Ingrese el costo total del servicio sin usar puntos ni comas"}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 
                 <FormField
@@ -932,7 +950,11 @@ export default function OrdersPage() {
                 <div className="col-span-2">
                   <h3 className="text-xs font-medium text-muted-foreground">Costo del Servicio</h3>
                   <p className="text-sm font-semibold">
-                    {selectedOrder.cost ? `$${selectedOrder.cost.toLocaleString()}` : "No especificado"}
+                    {selectedOrder.status === "warranty" 
+                      ? "Garantía (Sin Costo)" 
+                      : selectedOrder.cost 
+                        ? `$${selectedOrder.cost.toLocaleString()}` 
+                        : "No especificado"}
                   </p>
                 </div>
                 
