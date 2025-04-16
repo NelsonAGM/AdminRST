@@ -168,6 +168,7 @@ export const insertMonthlyRevenueSchema = createInsertSchema(monthlyRevenue).omi
 
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUserDb = z.infer<typeof insertUserDbSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
 export type User = typeof users.$inferSelect;
 

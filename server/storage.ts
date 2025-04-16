@@ -1,5 +1,5 @@
 import { 
-  users, type User, type InsertUser,
+  users, type User, type InsertUser, type InsertUserDb,
   clients, type Client, type InsertClient,
   technicians, type Technician, type InsertTechnician,
   equipment, type Equipment, type InsertEquipment,
@@ -39,8 +39,8 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined>;
+  createUser(user: InsertUserDb): Promise<User>;
+  updateUser(id: number, userData: Partial<InsertUserDb>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   listUsers(): Promise<User[]>;
 
@@ -146,17 +146,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const { confirmPassword, ...userData } = insertUser;
-    
+  async createUser(insertUser: InsertUserDb): Promise<User> {
     // Hash password if it's not already hashed
-    let hashedPassword = userData.password;
-    if (!userData.password.includes('.')) {
-      hashedPassword = await hashPassword(userData.password);
+    let hashedPassword = insertUser.password;
+    if (!insertUser.password.includes('.')) {
+      hashedPassword = await hashPassword(insertUser.password);
     }
     
     const [user] = await db.insert(users).values({
-      ...userData,
+      ...insertUser,
       password: hashedPassword
     }).returning();
     
