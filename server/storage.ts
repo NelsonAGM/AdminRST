@@ -161,16 +161,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
-    const { confirmPassword, ...updatedData } = userData;
-    
+  async updateUser(id: number, userData: Partial<InsertUserDb>): Promise<User | undefined> {
     // Hash password if it's being updated and not already hashed
-    if (updatedData.password && !updatedData.password.includes('.')) {
-      updatedData.password = await hashPassword(updatedData.password);
+    if (userData.password && !userData.password.includes('.')) {
+      userData.password = await hashPassword(userData.password);
     }
     
     const [updatedUser] = await db.update(users)
-      .set(updatedData)
+      .set(userData)
       .where(eq(users.id, id))
       .returning();
     
@@ -671,22 +669,21 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUserDb): Promise<User> {
     const id = this.userCurrentId++;
-    const { confirmPassword, ...userData } = insertUser;
     
     // Si se está creando un usuario desde el constructor, la contraseña ya estará hasheada
     // De lo contrario, hashear la contraseña aquí
-    let hashedPassword = userData.password;
-    if (!userData.password.includes('.')) {
-      hashedPassword = await hashPassword(userData.password);
+    let hashedPassword = insertUser.password;
+    if (!insertUser.password.includes('.')) {
+      hashedPassword = await hashPassword(insertUser.password);
     }
     
     // Asegurarnos de que role tiene un valor por defecto si no viene
-    const role = userData.role || "user";
+    const role = insertUser.role || "user";
     
     const user: User = { 
-      ...userData, 
+      ...insertUser, 
       password: hashedPassword,
       role,
       id, 
