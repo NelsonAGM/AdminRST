@@ -319,6 +319,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateServiceOrder(id: number, serviceOrderData: Partial<UpdateServiceOrder>): Promise<ServiceOrder | undefined> {
+    // Si se está cambiando el estado a warranty (garantía), establecer costo a 0
+    if (serviceOrderData.status === 'warranty') {
+      serviceOrderData.cost = 0;
+    }
+    
     const [updatedServiceOrder] = await db.update(serviceOrders)
       .set(serviceOrderData)
       .where(eq(serviceOrders.id, id))
@@ -503,15 +508,19 @@ export class DatabaseStorage implements IStorage {
     console.log("Calculando ingresos para", currentYear, currentMonth);
     
     try {
-      // Obtener solo órdenes completadas con costo
+      // Obtener órdenes completadas y de garantía con costo
       const orders = await db.select({
         id: serviceOrders.id,
-        cost: serviceOrders.cost
+        cost: serviceOrders.cost,
+        status: serviceOrders.status
       })
       .from(serviceOrders)
       .where(
         and(
-          eq(serviceOrders.status, 'completed'),
+          or(
+            eq(serviceOrders.status, 'completed'),
+            eq(serviceOrders.status, 'warranty')
+          ),
           sql`${serviceOrders.cost} IS NOT NULL`
         )
       );
