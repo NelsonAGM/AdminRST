@@ -392,10 +392,76 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getMonthlyRevenuesByYear(year: number): Promise<MonthlyRevenue[]> {
-    return await db.select()
+    // Primero, obtenemos los datos existentes en la tabla
+    const existingRecords = await db.select()
       .from(monthlyRevenue)
       .where(eq(monthlyRevenue.year, year))
       .orderBy(monthlyRevenue.month);
+    
+    // Ahora calculamos de nuevo los datos para cada mes
+    const monthlyData: MonthlyRevenue[] = [];
+    
+    // Calculamos para cada mes del año
+    for (let month = 1; month <= 12; month++) {
+      // Establecer fechas de inicio y fin del mes
+      const startOfMonth = new Date(year, month - 1, 1);
+      const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+      
+      // No recalculamos meses futuros
+      const now = new Date();
+      if (startOfMonth > now) {
+        continue;
+      }
+      
+      try {
+        // Obtener solo órdenes completadas con costo para este mes
+        const orders = await db.select({
+          id: serviceOrders.id,
+          cost: serviceOrders.cost,
+          completionDate: serviceOrders.completionDate
+        })
+        .from(serviceOrders)
+        .where(
+          and(
+            eq(serviceOrders.status, 'completed'),
+            sql`${serviceOrders.completionDate} >= ${startOfMonth.toISOString()}`,
+            sql`${serviceOrders.completionDate} <= ${endOfMonth.toISOString()}`,
+            sql`${serviceOrders.cost} IS NOT NULL`
+          )
+        );
+        
+        // Calcular totales
+        const orderCount = orders.length;
+        let totalAmount = 0;
+        
+        for (const order of orders) {
+          if (typeof order.cost === 'number') {
+            totalAmount += order.cost;
+          }
+        }
+        
+        const averageOrderValue = orderCount > 0 ? totalAmount / orderCount : 0;
+        
+        // Actualizar el registro para este mes
+        const updatedRevenue = await this.updateMonthlyRevenue(year, month, {
+          totalAmount: totalAmount.toString(),
+          orderCount,
+          averageOrderValue: averageOrderValue.toString()
+        });
+        
+        monthlyData.push(updatedRevenue);
+      } catch (error) {
+        console.error(`Error al calcular ingresos para ${year}-${month}:`, error);
+        
+        // Si hay un error, buscamos el registro existente
+        const existingRecord = existingRecords.find(r => r.month === month);
+        if (existingRecord) {
+          monthlyData.push(existingRecord);
+        }
+      }
+    }
+    
+    return monthlyData.sort((a, b) => a.month - b.month);
   }
   
   async updateMonthlyRevenue(year: number, month: number, data: Partial<InsertMonthlyRevenue>): Promise<MonthlyRevenue> {
