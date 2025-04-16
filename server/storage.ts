@@ -350,7 +350,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   async listServiceOrdersByStatus(status: string): Promise<ServiceOrder[]> {
-    return await db.select().from(serviceOrders).where(sql`${serviceOrders.status} = ${status}`);
+    // Usar el operador 'eq' de drizzle-orm para mayor seguridad en la comparación de enums
+    return await db.select().from(serviceOrders).where(eq(serviceOrders.status, status as any));
   }
 
   // Company Settings methods
