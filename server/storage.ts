@@ -843,8 +843,13 @@ export class MemStorage implements IStorage {
     const clientApproval = insertServiceOrder.clientApproval ?? false;
     const clientApprovalDate = insertServiceOrder.clientApprovalDate ?? null;
     
+    // Si el estado es warranty (garantía), el costo siempre es 0
+    const cost = status === 'warranty' ? 0 : (insertServiceOrder.cost ?? null);
+    
     const serviceOrder: ServiceOrder = { 
-      ...insertServiceOrder, 
+      clientId: insertServiceOrder.clientId,
+      equipmentId: insertServiceOrder.equipmentId,
+      description: insertServiceOrder.description,
       status,
       technicianId,
       notes,
@@ -854,6 +859,7 @@ export class MemStorage implements IStorage {
       photos,
       clientApproval,
       clientApprovalDate,
+      cost,
       id, 
       orderNumber,
       requestDate: new Date(),
@@ -866,6 +872,11 @@ export class MemStorage implements IStorage {
   async updateServiceOrder(id: number, serviceOrderData: Partial<UpdateServiceOrder>): Promise<ServiceOrder | undefined> {
     const serviceOrder = await this.getServiceOrder(id);
     if (!serviceOrder) return undefined;
+    
+    // Si se está cambiando el estado a warranty (garantía), establecer costo a 0
+    if (serviceOrderData.status === 'warranty') {
+      serviceOrderData.cost = 0;
+    }
     
     const updatedServiceOrder = { ...serviceOrder, ...serviceOrderData };
     this.serviceOrdersData.set(id, updatedServiceOrder);
@@ -984,10 +995,12 @@ export class MemStorage implements IStorage {
     
     const orders = Array.from(this.serviceOrdersData.values())
       .filter(order => 
-        order.status === 'completed' && 
+        // Incluimos órdenes completadas y de garantía
+        (order.status === 'completed' || order.status === 'warranty') && 
         order.completionDate &&
         order.completionDate >= startOfMonth &&
         order.completionDate <= endOfMonth &&
+        // Las órdenes de garantía ya tienen costo = 0, pero verificamos que sea un valor válido
         order.cost !== null && 
         order.cost !== undefined
       );
