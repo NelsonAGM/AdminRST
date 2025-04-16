@@ -61,23 +61,20 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   const port = process.env.PORT || 5000;
   
-  // Configurar el servicio de correo electrónico si están disponibles las variables de entorno
-  if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    try {
-      configureEmailService(
-        process.env.EMAIL_HOST,
-        parseInt(process.env.EMAIL_PORT),
-        process.env.EMAIL_USER,
-        process.env.EMAIL_PASSWORD,
-        process.env.EMAIL_PORT === '465', // true para SSL (puerto 465), false para otros
-        process.env.EMAIL_FROM || process.env.EMAIL_USER
-      );
-      log('Servicio de correo electrónico configurado correctamente');
-    } catch (error) {
-      console.error('Error al configurar el servicio de correo electrónico:', error);
-    }
-  } else {
-    console.warn('Variables de entorno para correo electrónico no configuradas correctamente');
+  // Configurar el servicio de correo electrónico con valores fijos para pruebas
+  try {
+    // Valores proporcionados por el usuario
+    configureEmailService(
+      "smtp.hostinger.com",  // EMAIL_HOST
+      465,                   // EMAIL_PORT
+      "no-reply@sistemasrst.com", // EMAIL_USER
+      "Sistemasrst2025#",    // EMAIL_PASSWORD
+      true,                  // Usar SSL (puerto 465)
+      "no-reply@sistemasrst.com"  // EMAIL_FROM
+    );
+    log('Servicio de correo electrónico configurado correctamente');
+  } catch (error) {
+    console.error('Error al configurar el servicio de correo electrónico:', error);
   }
   
   server.listen({

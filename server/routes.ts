@@ -460,7 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const emailHtml = generateNewOrderEmail(
             serviceOrder.orderNumber,
             client.name,
-            equipment.name,
+            `${equipment.brand} ${equipment.model}`,
             serviceOrder.description,
             companySettings || {
               id: 0,
