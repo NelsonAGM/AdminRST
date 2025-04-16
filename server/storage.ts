@@ -12,7 +12,7 @@ import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -419,16 +419,20 @@ export class DatabaseStorage implements IStorage {
       }
       
       try {
-        // Obtener solo órdenes completadas con costo para este mes
+        // Obtener órdenes completadas y de garantía con costo para este mes
         const orders = await db.select({
           id: serviceOrders.id,
           cost: serviceOrders.cost,
+          status: serviceOrders.status,
           completionDate: serviceOrders.completionDate
         })
         .from(serviceOrders)
         .where(
           and(
-            eq(serviceOrders.status, 'completed'),
+            or(
+              eq(serviceOrders.status, 'completed'),
+              eq(serviceOrders.status, 'warranty')
+            ),
             sql`${serviceOrders.completionDate} >= ${startOfMonth.toISOString()}`,
             sql`${serviceOrders.completionDate} <= ${endOfMonth.toISOString()}`,
             sql`${serviceOrders.cost} IS NOT NULL`
