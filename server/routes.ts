@@ -7,6 +7,7 @@ import {
   insertServiceOrderSchema, updateServiceOrderSchema, insertCompanySettingsSchema,
   insertUserSchema
 } from "@shared/schema";
+import { sendEmail, generateNewOrderEmail } from "./email";
 
 // Middleware to check if user is authenticated
 const ensureAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -448,6 +449,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const serviceOrder = await storage.createServiceOrder(validatedData);
+      
+      // Intentar enviar correo electrónico al cliente si tiene email
+      if (client.email) {
+        try {
+          // Obtener la configuración de la empresa para el email
+          const companySettings = await storage.getCompanySettings();
+          
+          // Generar el contenido del correo electrónico
+          const emailHtml = generateNewOrderEmail(
+            serviceOrder.orderNumber,
+            client.name,
+            equipment.name,
+            serviceOrder.description,
+            companySettings || {
+              id: 0,
+              name: 'Sistemas RST',
+              logoUrl: null,
+              address: '',
+              phone: '',
+              email: '',
+              website: null,
+              taxId: null,
+              updatedAt: new Date()
+            }
+          );
+          
+          // Enviar el correo electrónico
+          sendEmail({
+            to: client.email,
+            subject: `Nueva Orden de Servicio ${serviceOrder.orderNumber}`,
+            html: emailHtml
+          }).then(success => {
+            if (success) {
+              console.log(`Correo enviado correctamente al cliente ${client.email}`);
+            } else {
+              console.error(`Error al enviar correo al cliente ${client.email}`);
+            }
+          }).catch(err => {
+            console.error('Error en el envío de correo:', err);
+          });
+        } catch (emailError) {
+          // No fallamos la petición si hay un error al enviar el correo
+          console.error('Error al procesar el envío de correo:', emailError);
+        }
+      }
+      
       res.status(201).json(serviceOrder);
     } catch (error) {
       console.error("Error al crear orden de servicio:", error);

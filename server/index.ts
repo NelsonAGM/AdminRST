@@ -60,6 +60,26 @@ app.use((req, res, next) => {
   // Use the port specified in the environment or default to 5000
   // this serves both the API and the client.
   const port = process.env.PORT || 5000;
+  
+  // Configurar el servicio de correo electrónico si están disponibles las variables de entorno
+  if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    try {
+      configureEmailService(
+        process.env.EMAIL_HOST,
+        parseInt(process.env.EMAIL_PORT),
+        process.env.EMAIL_USER,
+        process.env.EMAIL_PASSWORD,
+        process.env.EMAIL_PORT === '465', // true para SSL (puerto 465), false para otros
+        process.env.EMAIL_FROM || process.env.EMAIL_USER
+      );
+      log('Servicio de correo electrónico configurado correctamente');
+    } catch (error) {
+      console.error('Error al configurar el servicio de correo electrónico:', error);
+    }
+  } else {
+    console.warn('Variables de entorno para correo electrónico no configuradas correctamente');
+  }
+  
   server.listen({
     port,
     host: "0.0.0.0",
