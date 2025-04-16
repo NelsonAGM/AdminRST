@@ -437,14 +437,17 @@ export class DatabaseStorage implements IStorage {
     console.log("Calculando ingresos para", currentYear, currentMonth);
     
     try {
-      // Consulta simple para obtener todas las órdenes con costo
+      // Obtener solo órdenes completadas con costo
       const orders = await db.select({
         id: serviceOrders.id,
         cost: serviceOrders.cost
       })
       .from(serviceOrders)
       .where(
-        sql`${serviceOrders.cost} IS NOT NULL`
+        and(
+          eq(serviceOrders.status, 'completed'),
+          sql`${serviceOrders.cost} IS NOT NULL`
+        )
       );
       
       console.log("Total de órdenes con costo:", orders.length);
