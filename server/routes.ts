@@ -666,10 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { confirmPassword, ...userData } = validatedData;
       
       // Create user with hashed password
-      const user = await storage.createUser({
-        ...userData,
-        password: await hashPassword(userData.password),
-      });
+      const user = await storage.createUser(userData);
       
       // Remove password from response
       const { password, ...userWithoutPassword } = user;

@@ -693,18 +693,16 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+  async updateUser(id: number, userData: Partial<InsertUserDb>): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
     
-    const { confirmPassword, ...updatedData } = userData;
-    
     // Si se está actualizando la contraseña, hashearla
-    if (updatedData.password && !updatedData.password.includes('.')) {
-      updatedData.password = await hashPassword(updatedData.password);
+    if (userData.password && !userData.password.includes('.')) {
+      userData.password = await hashPassword(userData.password);
     }
     
-    const updatedUser = { ...user, ...updatedData };
+    const updatedUser = { ...user, ...userData };
     this.usersData.set(id, updatedUser);
     return updatedUser;
   }
