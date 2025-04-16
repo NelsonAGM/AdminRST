@@ -59,9 +59,11 @@ interface EmailContent {
 // Función para enviar correo electrónico
 export async function sendEmail(content: EmailContent): Promise<boolean> {
   try {
+    console.log(`Preparando envío de correo a: ${content.to} con asunto: ${content.subject}`);
+    
     const transporter = createTransporter();
     
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Sistemas RST" <${emailFromAddress}>`,
       to: content.to,
       subject: content.subject,
@@ -69,9 +71,12 @@ export async function sendEmail(content: EmailContent): Promise<boolean> {
       html: content.html,
     });
     
+    console.log(`Correo enviado correctamente: ${info.messageId}`);
+    
     return true;
   } catch (error) {
     console.error('Error al enviar correo electrónico:', error);
+    console.error(JSON.stringify(error, null, 2));
     return false;
   }
 }

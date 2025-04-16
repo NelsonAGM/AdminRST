@@ -106,6 +106,7 @@ export const monthlyRevenue = pgTable("monthly_revenue", {
 });
 
 // Insert Schemas
+// Esquema para crear/validar usuario con confirmPassword para el frontend
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
   .extend({
@@ -115,6 +116,13 @@ export const insertUserSchema = createInsertSchema(users)
   .refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
+  });
+
+// Esquema para la base de datos (sin confirmPassword)
+export const insertUserDbSchema = createInsertSchema(users)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   });
 
 export const loginUserSchema = z.object({
