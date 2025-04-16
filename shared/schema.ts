@@ -10,7 +10,8 @@ export const orderStatusEnum = pgEnum('order_status', [
   'approved', 
   'in_progress', 
   'completed', 
-  'cancelled'
+  'cancelled',
+  'warranty'
 ]);
 export const technicianStatusEnum = pgEnum('technician_status', ['available', 'in_service', 'unavailable']);
 export const equipmentTypeEnum = pgEnum('equipment_type', ['desktop', 'laptop', 'server', 'printer', 'network', 'other']);

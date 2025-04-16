@@ -376,9 +376,12 @@ export default function OrdersPage() {
   const getStatusDisplay = (status: string) => {
     const statusMap = {
       pending: { label: "Pendiente", className: "bg-yellow-100 text-yellow-800" },
+      waiting_approval: { label: "Esperando Aprobación", className: "bg-orange-100 text-orange-800" },
+      approved: { label: "Aprobado", className: "bg-indigo-100 text-indigo-800" },
       in_progress: { label: "En Proceso", className: "bg-blue-100 text-blue-800" },
       completed: { label: "Completado", className: "bg-green-100 text-green-800" },
       cancelled: { label: "Cancelado", className: "bg-red-100 text-red-800" },
+      warranty: { label: "Garantía", className: "bg-purple-100 text-purple-800" },
     };
     
     return statusMap[status as keyof typeof statusMap] || { label: status, className: "bg-gray-100 text-gray-800" };
@@ -636,9 +639,12 @@ export default function OrdersPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="pending">Pendiente</SelectItem>
+                            <SelectItem value="waiting_approval">Esperando Aprobación</SelectItem>
+                            <SelectItem value="approved">Aprobado</SelectItem>
                             <SelectItem value="in_progress">En Proceso</SelectItem>
                             <SelectItem value="completed">Completado</SelectItem>
                             <SelectItem value="cancelled">Cancelado</SelectItem>
+                            <SelectItem value="warranty">Garantía</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -812,12 +818,14 @@ export default function OrdersPage() {
           onValueChange={setSelectedStatus} 
           className="w-full"
         >
-          <TabsList className="grid grid-cols-5">
+          <TabsList className="grid grid-cols-7">
             <TabsTrigger value="all">Todas</TabsTrigger>
             <TabsTrigger value="pending">Pendientes</TabsTrigger>
+            <TabsTrigger value="waiting_approval">Esperando</TabsTrigger>
+            <TabsTrigger value="approved">Aprobadas</TabsTrigger>
             <TabsTrigger value="in_progress">En Proceso</TabsTrigger>
             <TabsTrigger value="completed">Completadas</TabsTrigger>
-            <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
+            <TabsTrigger value="warranty">Garantía</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
