@@ -595,7 +595,7 @@ export default function AdminPage() {
                         type="checkbox" 
                         id="smtpSecure" 
                         className="h-4 w-4" 
-                        checked={form.watch("smtpSecure")}
+                        checked={form.watch("smtpSecure") || false}
                         onChange={(e) => form.setValue("smtpSecure", e.target.checked)}
                       />
                       <label htmlFor="smtpSecure" className="text-sm">Usar conexión segura (SSL/TLS)</label>

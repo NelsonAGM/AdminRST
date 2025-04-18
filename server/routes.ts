@@ -935,16 +935,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Extraer detalles específicos según el tipo de error
           if (errorMessage.includes('authentication failed') || errorMessage.includes('Invalid login')) {
             errorDetail = "Verifica que las credenciales del servidor SMTP sean correctas. " +
-                          "Es posible que necesites una contraseña específica para aplicaciones en lugar de la contraseña principal de la cuenta.";
+                          "Importante: Para Hostinger, asegúrate de usar tu dirección de correo electrónico completa como nombre de usuario (ej: no-reply@sistemasrst.com). " +
+                          "Es posible que necesites configurar una contraseña específica para aplicaciones en el panel de Hostinger.";
           } else if (errorMessage.includes('getaddrinfo')) {
             errorDetail = "No se pudo conectar al servidor. Verifica el nombre de host: " + 
-                          "Para Hostinger, generalmente es 'smtp.hostinger.com'.";
+                          "Para Hostinger, el host correcto es 'smtp.hostinger.com'.";
           } else if (errorMessage.includes('Connection refused')) {
             errorDetail = "El servidor rechazó la conexión. Verifica puertos: " +
-                          "El puerto estándar para SSL es 465, para TLS es 587, y para conexión no segura es 25.";
+                          "Para Hostinger, usa el puerto 465 con SSL/TLS activado, o el puerto 587 sin SSL/TLS.";
           } else if (errorMessage.includes('certificate')) { 
             errorDetail = "Hay un problema con el certificado SSL. " +
-                          "Puedes intentar desactivar la opción 'SSL/TLS' si tu servidor lo permite.";
+                          "Si usas Hostinger, asegúrate de usar el puerto 465 con SSL/TLS activado.";
           }
         }
         

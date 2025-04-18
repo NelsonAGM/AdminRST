@@ -92,8 +92,8 @@ const createTransporter = () => {
     throw new Error('La configuración de correo electrónico no está inicializada');
   }
 
-  // Crear una configuración específica para el servidor de Hostinger
-  const transporterConfig: SMTPTransportConfig = {
+  // Crear configuración base
+  let transporterConfig: SMTPTransportConfig = {
     host: emailHost,
     port: emailPort,
     secure: emailSecure, // true para 465, false para otros puertos
@@ -110,18 +110,29 @@ const createTransporter = () => {
     debug: true // Habilitar debug para ver más información
   };
   
-  // Agregar opciones específicas para Hostinger
+  // Configuración específica para Hostinger
   if (emailHost.includes('hostinger')) {
-    transporterConfig.connectionTimeout = 10000; // Mayor tiempo de espera para conexión
-    transporterConfig.greetingTimeout = 10000;   // Mayor tiempo de espera para saludo
-    transporterConfig.socketTimeout = 15000;     // Mayor tiempo de espera para socket
+    console.log("Detectado servidor Hostinger, usando configuración especial");
     
-    // Para algunos servidores Hostinger, es mejor usar un método de autenticación específico
-    transporterConfig.auth = {
-      user: emailUser,
-      pass: emailPass,
-      type: 'login' // Forzar el método de autenticación 'login' en lugar de 'plain'
-    } as any;
+    // Usar OAuth2 en lugar de login/plain para Hostinger
+    transporterConfig = {
+      host: emailHost,
+      port: emailPort,
+      secure: emailSecure,
+      debug: true,
+      tls: {
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2'
+      },
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+        type: 'login' // Usar login explícitamente
+      } as any,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000
+    };
   }
   
   console.log("Configurando transporter con:", JSON.stringify({
