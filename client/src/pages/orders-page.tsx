@@ -36,7 +36,8 @@ import {
   Calendar, 
   Upload, 
   Printer,
-  Wrench
+  Wrench,
+  Mail
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {

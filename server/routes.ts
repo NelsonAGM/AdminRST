@@ -635,6 +635,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al eliminar orden de servicio" });
     }
   });
+
+  // Endpoint para reenviar correo de una orden de servicio
+  app.post("/api/service-orders/:id/send-email", ensureAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const serviceOrder = await storage.getServiceOrder(id);
+      
+      if (!serviceOrder) {
+        return res.status(404).json({ message: "Orden de servicio no encontrada" });
+      }
+      
+      // Obtener el cliente y equipo para la orden
+      const client = await storage.getClient(serviceOrder.clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      if (!client.email) {
+        return res.status(400).json({ message: "El cliente no tiene dirección de correo electrónico" });
+      }
+      
+      const equipment = await storage.getEquipment(serviceOrder.equipmentId);
+      if (!equipment) {
+        return res.status(404).json({ message: "Equipo no encontrado" });
+      }
+      
+      // Obtener la configuración de la empresa
+      const companySettings = await storage.getCompanySettings() || {
+        id: 0,
+        name: 'Sistemas RST',
+        logoUrl: null,
+        address: '',
+        phone: '',
+        email: '',
+        website: null,
+        taxId: null,
+        updatedAt: new Date()
+      };
+      
+      // Generar el contenido del correo
+      const emailHtml = generateNewOrderEmail(
+        serviceOrder.orderNumber,
+        client.name,
+        `${equipment.brand} ${equipment.model}`,
+        serviceOrder.description,
+        companySettings
+      );
+      
+      // Enviar el correo
+      console.log(`Reenvío manual: Intentando enviar correo al cliente ${client.email}...`);
+      const success = await sendEmail({
+        to: client.email,
+        subject: `Orden de Servicio ${serviceOrder.orderNumber}`,
+        html: emailHtml
+      });
+      
+      if (success) {
+        return res.json({ 
+          success: true, 
+          message: `Correo enviado correctamente a ${client.email}` 
+        });
+      } else {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Error al enviar el correo electrónico" 
+        });
+      }
+    } catch (error) {
+      console.error("Error al reenviar correo:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al reenviar correo", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
   
   // User management routes
   app.get("/api/users", ensureAdmin, async (req, res) => {
