@@ -23,7 +23,8 @@ import {
   Send,
   Key,
   Cog,
-  Mail
+  Mail,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -41,7 +42,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { SingleImageUpload } from "@/components/ui/single-image-upload";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -673,6 +674,43 @@ export default function AdminPage() {
                           </FormItem>
                         )}
                       />
+                    </div>
+                    
+                    {/* Campo para Email de Prueba y Botón para Probar la Conexión */}
+                    <div className="space-y-4 my-4 p-4 bg-muted/50 rounded-md border border-border">
+                      <h3 className="text-sm font-medium">Probar Configuración SMTP</h3>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Después de guardar la configuración, puede probar la conexión enviando un correo de prueba.
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 w-full">
+                        <Input
+                          type="email"
+                          placeholder="Correo para prueba"
+                          value={testEmail}
+                          onChange={(e) => setTestEmail(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          onClick={testSmtpConnection}
+                          disabled={testingConnection || !form.watch("smtpHost")}
+                          className="whitespace-nowrap"
+                        >
+                          {testingConnection ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Probando...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Probar Conexión
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     
                     <Button 
