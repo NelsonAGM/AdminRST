@@ -37,7 +37,7 @@ const createTransporter = () => {
     throw new Error('La configuración de correo electrónico no está inicializada');
   }
 
-  return nodemailer.createTransport({
+  const transporterConfig = {
     host: emailHost,
     port: emailPort,
     secure: emailSecure, // true para 465, false para otros puertos
@@ -45,7 +45,22 @@ const createTransporter = () => {
       user: emailUser,
       pass: emailPass,
     },
-  });
+    tls: {
+      // No rechazar conexiones no autorizadas (útil para desarrollo y pruebas)
+      rejectUnauthorized: false
+    },
+    debug: true // Habilitar debug para ver más información
+  };
+  
+  console.log("Configurando transporter con:", JSON.stringify({
+    ...transporterConfig, 
+    auth: { 
+      user: transporterConfig.auth.user,
+      pass: "**********" // Ocultamos la contraseña en los logs
+    }
+  }));
+  
+  return nodemailer.createTransport(transporterConfig);
 };
 
 // Interfaz para el contenido del correo

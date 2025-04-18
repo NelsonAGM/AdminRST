@@ -475,20 +475,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           );
           
-          // Enviar el correo electrónico
-          sendEmail({
-            to: client.email,
-            subject: `Nueva Orden de Servicio ${serviceOrder.orderNumber}`,
-            html: emailHtml
-          }).then(success => {
+          // Enviar el correo electrónico de forma síncrona para tener mejor registro
+          try {
+            console.log(`Intentando enviar correo al cliente ${client.email}...`);
+            const success = await sendEmail({
+              to: client.email,
+              subject: `Nueva Orden de Servicio ${serviceOrder.orderNumber}`,
+              html: emailHtml
+            });
+            
             if (success) {
               console.log(`Correo enviado correctamente al cliente ${client.email}`);
             } else {
               console.error(`Error al enviar correo al cliente ${client.email}`);
             }
-          }).catch(err => {
-            console.error('Error en el envío de correo:', err);
-          });
+          } catch (emailErr) {
+            console.error('Error inesperado en el envío de correo:', emailErr);
+          }
         } catch (emailError) {
           // No fallamos la petición si hay un error al enviar el correo
           console.error('Error al procesar el envío de correo:', emailError);
