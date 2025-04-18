@@ -526,6 +526,20 @@ export default function AdminPage() {
                       </AlertDescription>
                     </Alert>
                     
+                    <Alert variant="secondary" className="mb-4">
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Configuración recomendada para Hostinger</AlertTitle>
+                      <AlertDescription>
+                        <ul className="list-disc pl-5 text-sm mt-2">
+                          <li>Servidor: <strong>smtp.hostinger.com</strong></li>
+                          <li>Puerto: <strong>465</strong> (con SSL/TLS activado)</li>
+                          <li>Usuario: Tu correo completo (ej. <strong>no-reply@sistemasrst.com</strong>)</li>
+                          <li>Contraseña: La contraseña de tu correo en Hostinger</li>
+                        </ul>
+                        <p className="mt-2 text-sm">Si encuentras problemas de autenticación, verifica en el panel de Hostinger si necesitas generar una <strong>contraseña específica para aplicaciones</strong>.</p>
+                      </AlertDescription>
+                    </Alert>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
@@ -687,6 +701,16 @@ export default function AdminPage() {
                       <p className="text-xs text-muted-foreground mb-2">
                         Después de guardar la configuración, puede probar la conexión enviando un correo de prueba.
                       </p>
+                      
+                      <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-md mb-3 border border-amber-200 dark:border-amber-800">
+                        <strong>Importante:</strong> Si tienes problemas con la autenticación, intenta lo siguiente:
+                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                          <li>Verifica que el usuario sea tu dirección completa de correo (por ejemplo: no-reply@sistemasrst.com)</li>
+                          <li>Comprueba que la contraseña sea correcta. Para Hostinger, puedes intentar con la contraseña específica para aplicaciones si la has configurado</li>
+                          <li>Asegúrate que el puerto es correcto (465 para SSL, 587 para TLS)</li>
+                          <li>Si usas puerto 465, activa la opción SSL/TLS; si usas 587, desactívala</li>
+                        </ul>
+                      </div>
                       
                       <div className="flex flex-col sm:flex-row gap-2 w-full">
                         <Input

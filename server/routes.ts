@@ -899,7 +899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Enviar un correo de prueba
+      // Preparar el contenido del correo de prueba
       const testEmailContent = {
         to: testEmail,
         subject: "Prueba de conexión SMTP",
@@ -914,28 +914,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
       };
       
+      // Intentar con las credenciales actuales
       try {
+        console.log("Intentando enviar correo con la configuración proporcionada...");
         await sendEmail(testEmailContent);
-        res.json({ success: true, message: "Prueba de conexión exitosa. Se ha enviado un correo de prueba." });
-      } catch (emailError) {
-        // Usamos el mensaje del error lanzado en sendEmail
+        return res.json({ 
+          success: true, 
+          message: "Prueba de conexión exitosa. Se ha enviado un correo de prueba." 
+        });
+      } catch (primaryError) {
+        console.error("Error con la configuración primaria:", primaryError);
+        
+        // Si falla con el servidor de Hostinger, informamos el error específico
         let errorMessage = "Error al enviar el correo de prueba.";
         let errorDetail = "";
         
-        if (emailError instanceof Error) {
-          errorMessage = emailError.message;
+        if (primaryError instanceof Error) {
+          errorMessage = primaryError.message;
           
-          // Extraer detalles específicos si es un error de autenticación
+          // Extraer detalles específicos según el tipo de error
           if (errorMessage.includes('authentication failed') || errorMessage.includes('Invalid login')) {
-            errorDetail = "Verifica que las credenciales del servidor SMTP sean correctas";
+            errorDetail = "Verifica que las credenciales del servidor SMTP sean correctas. " +
+                          "Es posible que necesites una contraseña específica para aplicaciones en lugar de la contraseña principal de la cuenta.";
           } else if (errorMessage.includes('getaddrinfo')) {
-            errorDetail = "No se pudo conectar al servidor. Verifica el nombre de host";
+            errorDetail = "No se pudo conectar al servidor. Verifica el nombre de host: " + 
+                          "Para Hostinger, generalmente es 'smtp.hostinger.com'.";
           } else if (errorMessage.includes('Connection refused')) {
-            errorDetail = "El servidor rechazó la conexión. Verifica puertos y configuración de firewall";
+            errorDetail = "El servidor rechazó la conexión. Verifica puertos: " +
+                          "El puerto estándar para SSL es 465, para TLS es 587, y para conexión no segura es 25.";
+          } else if (errorMessage.includes('certificate')) { 
+            errorDetail = "Hay un problema con el certificado SSL. " +
+                          "Puedes intentar desactivar la opción 'SSL/TLS' si tu servidor lo permite.";
           }
         }
         
-        res.status(500).json({ 
+        return res.status(500).json({ 
           success: false, 
           message: errorMessage,
           detail: errorDetail

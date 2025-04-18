@@ -115,6 +115,13 @@ const createTransporter = () => {
     transporterConfig.connectionTimeout = 10000; // Mayor tiempo de espera para conexión
     transporterConfig.greetingTimeout = 10000;   // Mayor tiempo de espera para saludo
     transporterConfig.socketTimeout = 15000;     // Mayor tiempo de espera para socket
+    
+    // Para algunos servidores Hostinger, es mejor usar un método de autenticación específico
+    transporterConfig.auth = {
+      user: emailUser,
+      pass: emailPass,
+      type: 'login' // Forzar el método de autenticación 'login' en lugar de 'plain'
+    } as any;
   }
   
   console.log("Configurando transporter con:", JSON.stringify({
@@ -170,6 +177,13 @@ async function verifySmtpConnection(): Promise<boolean> {
       transporterConfig.connectionTimeout = 10000; // Mayor tiempo de espera para conexión
       transporterConfig.greetingTimeout = 10000;   // Mayor tiempo de espera para saludo
       transporterConfig.socketTimeout = 15000;     // Mayor tiempo de espera para socket
+      
+      // Para algunos servidores Hostinger, es mejor usar un método de autenticación específico
+      transporterConfig.auth = {
+        user: emailUser,
+        pass: emailPass,
+        type: 'login' // Forzar el método de autenticación 'login' en lugar de 'plain'
+      } as any;
     }
     
     const transporter = nodemailer.createTransport(transporterConfig as any);
