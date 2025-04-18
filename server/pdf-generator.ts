@@ -86,7 +86,7 @@ function createServiceOrderPDFContent(
   addDescriptionSection(doc, serviceOrder);
   
   // Materiales utilizados
-  if (serviceOrder.materials) {
+  if (serviceOrder.materialsUsed) {
     addMaterialsSection(doc, serviceOrder);
   }
   

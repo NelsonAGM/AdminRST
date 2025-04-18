@@ -8,6 +8,7 @@ import {
   insertUserSchema
 } from "@shared/schema";
 import { sendEmail, generateNewOrderEmail, loadEmailConfigFromDatabase } from "./email";
+import { generateServiceOrderPDF } from "./pdf-generator";
 
 // Middleware to check if user is authenticated
 const ensureAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -636,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para reenviar correo de una orden de servicio
+  // Endpoint para reenviar correo de una orden de servicio con PDF adjunto
   app.post("/api/service-orders/:id/send-email", ensureAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -661,6 +662,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Equipo no encontrado" });
       }
       
+      // Obtener información del técnico si existe
+      let technician;
+      if (serviceOrder.technicianId) {
+        technician = await storage.getTechnician(serviceOrder.technicianId);
+      }
+      
+      // Si no hay técnico asignado, usar datos mínimos
+      if (!technician) {
+        technician = {
+          id: 0,
+          userId: 0,
+          specialization: 'No asignado',
+          status: 'available' as const,
+          createdAt: new Date()
+        };
+      }
+      
       // Obtener la configuración de la empresa
       const companySettings = await storage.getCompanySettings() || {
         id: 0,
@@ -683,24 +701,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companySettings
       );
       
-      // Enviar el correo
-      console.log(`Reenvío manual: Intentando enviar correo al cliente ${client.email}...`);
-      const success = await sendEmail({
-        to: client.email,
-        subject: `Orden de Servicio ${serviceOrder.orderNumber}`,
-        html: emailHtml
-      });
+      // Generar el PDF de la orden
+      console.log(`Generando PDF para la orden ${serviceOrder.orderNumber}...`);
       
-      if (success) {
-        return res.json({ 
-          success: true, 
-          message: `Correo enviado correctamente a ${client.email}` 
+      try {
+        // Generar el PDF
+        const pdfBuffer = await generateServiceOrderPDF(
+          serviceOrder,
+          client,
+          equipment,
+          technician,
+          companySettings
+        );
+        
+        console.log(`PDF generado correctamente, tamaño: ${pdfBuffer.length} bytes`);
+        
+        // Enviar el correo con el PDF adjunto
+        console.log(`Reenvío manual: Intentando enviar correo al cliente ${client.email}...`);
+        const success = await sendEmail({
+          to: client.email,
+          subject: `Orden de Servicio ${serviceOrder.orderNumber}`,
+          html: emailHtml,
+          attachments: [
+            {
+              filename: `Orden_${serviceOrder.orderNumber}.pdf`,
+              content: pdfBuffer,
+              contentType: 'application/pdf'
+            }
+          ]
         });
-      } else {
-        return res.status(500).json({ 
-          success: false, 
-          message: "Error al enviar el correo electrónico" 
+        
+        if (success) {
+          return res.json({ 
+            success: true, 
+            message: `Correo enviado correctamente a ${client.email} con PDF adjunto` 
+          });
+        } else {
+          return res.status(500).json({ 
+            success: false, 
+            message: "Error al enviar el correo electrónico" 
+          });
+        }
+      } catch (pdfError) {
+        console.error("Error al generar el PDF:", pdfError);
+        // Si falla la generación del PDF, enviamos el correo sin adjunto
+        console.log("Enviando correo sin adjunto PDF debido a un error en la generación...");
+        const success = await sendEmail({
+          to: client.email,
+          subject: `Orden de Servicio ${serviceOrder.orderNumber}`,
+          html: emailHtml
         });
+        
+        if (success) {
+          return res.json({ 
+            success: true, 
+            message: `Correo enviado correctamente a ${client.email} (sin PDF adjunto debido a un error)` 
+          });
+        } else {
+          return res.status(500).json({ 
+            success: false, 
+            message: "Error al enviar el correo electrónico" 
+          });
+        }
       }
     } catch (error) {
       console.error("Error al reenviar correo:", error);
