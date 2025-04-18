@@ -19,7 +19,11 @@ import {
   Activity,
   Database,
   Clock,
-  Lock
+  Lock,
+  Send,
+  Key,
+  Cog,
+  Mail
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -62,6 +66,14 @@ export default function AdminPage() {
       email: "",
       website: "",
       taxId: "",
+      // Configuración SMTP
+      smtpHost: "",
+      smtpPort: 465,
+      smtpSecure: true,
+      smtpUser: "",
+      smtpPassword: "",
+      smtpFromName: "",
+      smtpFromEmail: "",
     },
   });
   
@@ -140,6 +152,7 @@ export default function AdminPage() {
           <TabsTrigger value="system">Sistema</TabsTrigger>
         </TabsList>
         
+        {/* Pestaña de la Empresa */}
         <TabsContent value="company">
           <Card>
             <CardHeader>
@@ -305,6 +318,7 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
         
+        {/* Pestaña de Respaldos */}
         <TabsContent value="backup">
           <Card>
             <CardHeader>
@@ -391,40 +405,43 @@ export default function AdminPage() {
                         <label htmlFor="frequency" className="text-sm font-medium">Frecuencia</label>
                         <select 
                           id="frequency" 
-                          className="w-full rounded-md border border-input p-2 mt-1"
-                          disabled
+                          className="mt-1 block w-full p-2 border border-input rounded-md bg-background"
                         >
-                          <option>Diario</option>
-                          <option>Semanal</option>
-                          <option>Mensual</option>
+                          <option value="daily">Diario</option>
+                          <option value="weekly">Semanal</option>
+                          <option value="monthly">Mensual</option>
                         </select>
                       </div>
                       
                       <div>
                         <label htmlFor="time" className="text-sm font-medium">Hora</label>
-                        <input 
-                          type="time" 
+                        <select 
                           id="time" 
-                          className="w-full rounded-md border border-input p-2 mt-1"
-                          disabled
-                        />
+                          className="mt-1 block w-full p-2 border border-input rounded-md bg-background"
+                        >
+                          <option value="00:00">00:00</option>
+                          <option value="01:00">01:00</option>
+                          <option value="02:00">02:00</option>
+                          <option value="03:00">03:00</option>
+                          <option value="04:00">04:00</option>
+                        </select>
                       </div>
                       
                       <div>
                         <label htmlFor="retention" className="text-sm font-medium">Retención</label>
                         <select 
                           id="retention" 
-                          className="w-full rounded-md border border-input p-2 mt-1"
-                          disabled
+                          className="mt-1 block w-full p-2 border border-input rounded-md bg-background"
                         >
-                          <option>Últimos 7 días</option>
-                          <option>Últimas 4 semanas</option>
-                          <option>Últimos 3 meses</option>
+                          <option value="7">7 días</option>
+                          <option value="14">14 días</option>
+                          <option value="30">30 días</option>
+                          <option value="90">90 días</option>
                         </select>
                       </div>
                     </div>
                     
-                    <Button disabled className="w-full md:w-auto">
+                    <Button className="mt-2">
                       <Save className="h-4 w-4 mr-2" />
                       Guardar Configuración
                     </Button>
@@ -435,162 +452,358 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
         
+        {/* Pestaña del Sistema */}
         <TabsContent value="system">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información del Sistema</CardTitle>
-              <CardDescription>
-                Visualiza el estado del sistema y configura opciones avanzadas
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Alert>
-                <Server className="h-4 w-4" />
-                <AlertTitle>Información del servidor</AlertTitle>
-                <AlertDescription>
-                  El sistema está funcionando correctamente en modo producción.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
+            {/* Configuración del Servidor SMTP */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración de Correo Electrónico (SMTP)</CardTitle>
+                <CardDescription>
+                  Configura los parámetros del servidor de correo para enviar notificaciones a clientes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <Alert>
+                      <Mail className="h-4 w-4" />
+                      <AlertTitle>Importante</AlertTitle>
+                      <AlertDescription>
+                        La configuración correcta del servidor SMTP es necesaria para el envío de notificaciones por correo electrónico a los clientes.
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="smtpHost"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Servidor SMTP</FormLabel>
+                            <FormControl>
+                              <div className="flex">
+                                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
+                                  <Server className="h-4 w-4" />
+                                </span>
+                                <Input 
+                                  {...field} 
+                                  value={field.value || ""} 
+                                  className="rounded-l-none" 
+                                  placeholder="smtp.ejemplo.com"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="smtpPort"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Puerto SMTP</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                value={field.value || "465"} 
+                                type="number" 
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 465)}
+                                placeholder="465"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        id="smtpSecure" 
+                        className="h-4 w-4" 
+                        checked={form.watch("smtpSecure")}
+                        onChange={(e) => form.setValue("smtpSecure", e.target.checked)}
+                      />
+                      <label htmlFor="smtpSecure" className="text-sm">Usar conexión segura (SSL/TLS)</label>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="smtpUser"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Usuario SMTP</FormLabel>
+                            <FormControl>
+                              <div className="flex">
+                                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
+                                  <AtSign className="h-4 w-4" />
+                                </span>
+                                <Input 
+                                  {...field} 
+                                  value={field.value || ""} 
+                                  className="rounded-l-none" 
+                                  placeholder="usuario@ejemplo.com"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="smtpPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contraseña SMTP</FormLabel>
+                            <FormControl>
+                              <div className="flex">
+                                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
+                                  <Key className="h-4 w-4" />
+                                </span>
+                                <Input 
+                                  {...field} 
+                                  type="password" 
+                                  value={field.value || ""} 
+                                  className="rounded-l-none" 
+                                  placeholder="••••••••"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="smtpFromName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre del Remitente</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                value={field.value || ""} 
+                                placeholder="Sistemas RST"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="smtpFromEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email del Remitente</FormLabel>
+                            <FormControl>
+                              <div className="flex">
+                                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground">
+                                  <Send className="h-4 w-4" />
+                                </span>
+                                <Input 
+                                  {...field} 
+                                  value={field.value || ""} 
+                                  type="email" 
+                                  className="rounded-l-none" 
+                                  placeholder="no-reply@sistemasrst.com"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      disabled={updateMutation.isPending}
+                      className="mt-4"
+                    >
+                      {updateMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {!updateMutation.isPending && (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
+                      Guardar Configuración de Correo
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+            
+            {/* Información del Sistema */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Información del Sistema</CardTitle>
+                <CardDescription>
+                  Visualiza el estado del sistema y configura opciones avanzadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Alert>
+                  <Server className="h-4 w-4" />
+                  <AlertTitle>Información del servidor</AlertTitle>
+                  <AlertDescription>
+                    El sistema está funcionando correctamente en modo producción.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Estado del Servidor</CardTitle>
+                      <CardDescription>
+                        Monitorea el estado actual del sistema
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between border-b pb-2">
+                          <span className="text-sm">Versión:</span>
+                          <span className="text-sm font-medium">v1.0.0</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2">
+                          <span className="text-sm">Estado:</span>
+                          <span className="text-sm font-medium text-green-500">En línea</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2">
+                          <span className="text-sm">Tiempo activo:</span>
+                          <span className="text-sm font-medium">7 días, 3 horas</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Última actualización:</span>
+                          <span className="text-sm font-medium">02/04/2025</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Base de Datos</CardTitle>
+                      <CardDescription>
+                        Información de la base de datos
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between border-b pb-2">
+                          <span className="text-sm">Tipo:</span>
+                          <span className="text-sm font-medium">PostgreSQL</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2">
+                          <span className="text-sm">Estado:</span>
+                          <span className="text-sm font-medium text-green-500">Conectado</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-2">
+                          <span className="text-sm">Tamaño:</span>
+                          <span className="text-sm font-medium">12.4 MB</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Registros totales:</span>
+                          <span className="text-sm font-medium">1,247</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center">
+                        <Activity className="h-4 w-4 mr-2" />
+                        Rendimiento
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-24 flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">92%</p>
+                          <p className="text-xs text-muted-foreground">Rendimiento</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center">
+                        <Database className="h-4 w-4 mr-2" />
+                        Uso de CPU
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-24 flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">15%</p>
+                          <p className="text-xs text-muted-foreground">Promedio</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        Respuesta
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-24 flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">217ms</p>
+                          <p className="text-xs text-muted-foreground">Tiempo promedio</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Estado del Servidor</CardTitle>
+                    <CardTitle className="text-base">Acciones del Sistema</CardTitle>
                     <CardDescription>
-                      Monitorea el estado actual del sistema
+                      Acciones avanzadas para administradores
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="text-sm">Versión:</span>
-                        <span className="text-sm font-medium">v1.0.0</span>
-                      </div>
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="text-sm">Estado:</span>
-                        <span className="text-sm font-medium text-green-500">En línea</span>
-                      </div>
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="text-sm">Tiempo activo:</span>
-                        <span className="text-sm font-medium">7 días, 3 horas</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Última actualización:</span>
-                        <span className="text-sm font-medium">02/04/2025</span>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Button variant="outline" className="w-full">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Limpiar Caché
+                      </Button>
+                      <Button variant="outline" className="w-full">
+                        <Lock className="h-4 w-4 mr-2" />
+                        Modo Mantenimiento
+                      </Button>
+                      <Button variant="outline" className="w-full" disabled>
+                        <Server className="h-4 w-4 mr-2" />
+                        Actualizar Sistema
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Base de Datos</CardTitle>
-                    <CardDescription>
-                      Información de la base de datos
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="text-sm">Tipo:</span>
-                        <span className="text-sm font-medium">PostgreSQL</span>
-                      </div>
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="text-sm">Estado:</span>
-                        <span className="text-sm font-medium text-green-500">Conectado</span>
-                      </div>
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="text-sm">Tamaño:</span>
-                        <span className="text-sm font-medium">12.4 MB</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Registros totales:</span>
-                        <span className="text-sm font-medium">1,247</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center">
-                      <Activity className="h-4 w-4 mr-2" />
-                      Rendimiento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-24 flex items-center justify-center">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold">98.2%</p>
-                        <p className="text-xs text-muted-foreground">Tiempo activo</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center">
-                      <Database className="h-4 w-4 mr-2" />
-                      Almacenamiento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-24 flex items-center justify-center">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold">43.5%</p>
-                        <p className="text-xs text-muted-foreground">Espacio utilizado</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Respuesta
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-24 flex items-center justify-center">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold">217ms</p>
-                        <p className="text-xs text-muted-foreground">Tiempo promedio</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Acciones del Sistema</CardTitle>
-                  <CardDescription>
-                    Acciones avanzadas para administradores
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button variant="outline" className="w-full">
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Limpiar Caché
-                    </Button>
-                    <Button variant="outline" className="w-full">
-                      <Lock className="h-4 w-4 mr-2" />
-                      Modo Mantenimiento
-                    </Button>
-                    <Button variant="outline" className="w-full" disabled>
-                      <Server className="h-4 w-4 mr-2" />
-                      Actualizar Sistema
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </DashboardLayout>
