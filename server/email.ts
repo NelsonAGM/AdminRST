@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { CompanySettings } from '@shared/schema';
+import { db } from './db';
+import { companySettings } from '@shared/schema';
 
 // Variables para almacenar la configuración del correo
 let emailHost: string;
@@ -7,15 +9,17 @@ let emailPort: number;
 let emailUser: string;
 let emailPass: string;
 let emailSecure: boolean;
+let emailFromName: string;
 let emailFromAddress: string;
 
-// Función para configurar el servicio de correo
+// Función para configurar el servicio de correo manualmente
 export function configureEmailService(
   host: string,
   port: number,
   user: string,
   password: string,
   secure: boolean = true,
+  fromName?: string,
   fromAddress?: string
 ) {
   emailHost = host;
@@ -23,11 +27,42 @@ export function configureEmailService(
   emailUser = user;
   emailPass = password;
   emailSecure = secure;
+  emailFromName = fromName || 'Sistemas RST';
   emailFromAddress = fromAddress || user;
 
   // Verificar que todos los campos requeridos estén presentes
   if (!emailHost || !emailPort || !emailUser || !emailPass) {
     throw new Error('La configuración de correo electrónico está incompleta');
+  }
+}
+
+// Cargar configuración desde la base de datos
+export async function loadEmailConfigFromDatabase(): Promise<boolean> {
+  try {
+    const [settings] = await db.select().from(companySettings).limit(1);
+    
+    if (!settings || 
+        !settings.smtpHost || 
+        !settings.smtpPort || 
+        !settings.smtpUser || 
+        !settings.smtpPassword) {
+      console.log('Configuración de correo en la base de datos está incompleta');
+      return false;
+    }
+    
+    emailHost = settings.smtpHost;
+    emailPort = settings.smtpPort;
+    emailUser = settings.smtpUser;
+    emailPass = settings.smtpPassword;
+    emailSecure = settings.smtpSecure ?? true;
+    emailFromName = settings.smtpFromName || settings.name;
+    emailFromAddress = settings.smtpFromEmail || settings.smtpUser;
+    
+    console.log(`Configuración de correo cargada desde la base de datos para host: ${emailHost}:${emailPort}`);
+    return true;
+  } catch (error) {
+    console.error('Error al cargar configuración de correo desde la base de datos:', error);
+    return false;
   }
 }
 
@@ -84,7 +119,7 @@ export async function sendEmail(content: EmailContent): Promise<boolean> {
     console.log(`Dirección de origen: ${emailFromAddress}`);
     
     const mailOptions = {
-      from: `"Sistemas RST" <${emailFromAddress}>`,
+      from: `"${emailFromName}" <${emailFromAddress}>`,
       to: content.to,
       subject: content.subject,
       text: content.text,

@@ -63,25 +63,32 @@ app.use((req, res, next) => {
   
   // Configurar el servicio de correo electrónico
   try {
-    // Variables de entorno para el servicio de correo
-    const emailHost = process.env.EMAIL_HOST || "smtp.hostinger.com";
-    const emailPort = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : 465;
-    const emailUser = process.env.EMAIL_USER || "no-reply@sistemasrst.com";
-    const emailPass = process.env.EMAIL_PASSWORD || "Sistemasrst2025#";
-    const emailSecure = true; // siempre true para puerto 465
-    const emailFrom = process.env.EMAIL_FROM || emailUser;
+    // Primero intentamos cargar la configuración desde la base de datos
+    const { loadEmailConfigFromDatabase } = await import('./email');
+    const configLoadedFromDb = await loadEmailConfigFromDatabase();
     
-    configureEmailService(
-      emailHost,
-      emailPort,
-      emailUser,
-      emailPass,
-      emailSecure,
-      emailFrom
-    );
+    if (!configLoadedFromDb) {
+      // Si no se pudo cargar desde la base de datos, usamos las variables de entorno
+      const emailHost = process.env.EMAIL_HOST || "smtp.hostinger.com";
+      const emailPort = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : 465;
+      const emailUser = process.env.EMAIL_USER || "no-reply@sistemasrst.com";
+      const emailPass = process.env.EMAIL_PASSWORD || "";
+      const emailSecure = true; // siempre true para puerto 465
+      const emailFromName = "Sistemas RST";
+      const emailFrom = process.env.EMAIL_FROM || emailUser;
+      
+      configureEmailService(
+        emailHost,
+        emailPort,
+        emailUser,
+        emailPass,
+        emailSecure,
+        emailFromName,
+        emailFrom
+      );
+    }
     
     log('Servicio de correo electrónico configurado correctamente');
-    log(`Usando cuenta de correo: ${emailUser} en servidor: ${emailHost}:${emailPort}`);
   } catch (error) {
     console.error('Error al configurar el servicio de correo electrónico:', error);
   }

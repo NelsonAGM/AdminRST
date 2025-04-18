@@ -90,6 +90,14 @@ export const companySettings = pgTable("company_settings", {
   email: text("email").notNull(),
   website: text("website"),
   taxId: text("tax_id"),
+  // Configuración de correo electrónico
+  smtpHost: text("smtp_host"),
+  smtpPort: integer("smtp_port"),
+  smtpSecure: boolean("smtp_secure").default(true),
+  smtpUser: text("smtp_user"),
+  smtpPassword: text("smtp_password"),
+  smtpFromName: text("smtp_from_name"),
+  smtpFromEmail: text("smtp_from_email"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
