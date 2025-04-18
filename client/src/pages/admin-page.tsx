@@ -526,19 +526,23 @@ export default function AdminPage() {
                       </AlertDescription>
                     </Alert>
                     
-                    <Alert variant="secondary" className="mb-4">
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>Configuración recomendada para Hostinger</AlertTitle>
-                      <AlertDescription>
-                        <ul className="list-disc pl-5 text-sm mt-2">
-                          <li>Servidor: <strong>smtp.hostinger.com</strong></li>
-                          <li>Puerto: <strong>465</strong> (con SSL/TLS activado)</li>
-                          <li>Usuario: Tu correo completo (ej. <strong>no-reply@sistemasrst.com</strong>)</li>
-                          <li>Contraseña: La contraseña de tu correo en Hostinger</li>
-                        </ul>
-                        <p className="mt-2 text-sm">Si encuentras problemas de autenticación, verifica en el panel de Hostinger si necesitas generar una <strong>contraseña específica para aplicaciones</strong>.</p>
-                      </AlertDescription>
-                    </Alert>
+                    <div className="mb-4 p-4 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:border-blue-800">
+                      <div className="flex items-start gap-2">
+                        <Mail className="h-4 w-4 mt-0.5 text-blue-700 dark:text-blue-400" />
+                        <div>
+                          <h5 className="mb-1 font-medium leading-none tracking-tight">Configuración recomendada para Hostinger</h5>
+                          <div className="text-sm mt-2">
+                            <ul className="list-disc pl-5 text-sm">
+                              <li>Servidor: <strong>smtp.hostinger.com</strong></li>
+                              <li>Puerto: <strong>465</strong> (con SSL/TLS activado)</li>
+                              <li>Usuario: Tu correo completo (ej. <strong>no-reply@sistemasrst.com</strong>)</li>
+                              <li>Contraseña: La contraseña de tu correo en Hostinger</li>
+                            </ul>
+                            <p className="mt-2">Si encuentras problemas de autenticación, verifica en el panel de Hostinger si necesitas generar una <strong>contraseña específica para aplicaciones</strong>.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
