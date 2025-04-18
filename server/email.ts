@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { CompanySettings } from '@shared/schema';
 import { db } from './db';
 import { companySettings } from '@shared/schema';
+import { TransportOptions } from 'nodemailer';
 
 // Variables para almacenar la configuración del correo
 let emailHost: string;
@@ -66,13 +67,33 @@ export async function loadEmailConfigFromDatabase(): Promise<boolean> {
   }
 }
 
+// Interfaz para nuestro configuración de transporte (con los tipos correctos)
+interface SMTPTransportConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+  tls: {
+    rejectUnauthorized: boolean;
+    minVersion: string;
+  };
+  debug: boolean;
+  connectionTimeout?: number;
+  greetingTimeout?: number;
+  socketTimeout?: number;
+}
+
 // Crear el transporter de nodemailer
 const createTransporter = () => {
   if (!emailHost || !emailPort || !emailUser || !emailPass) {
     throw new Error('La configuración de correo electrónico no está inicializada');
   }
 
-  const transporterConfig = {
+  // Crear una configuración específica para el servidor de Hostinger
+  const transporterConfig: SMTPTransportConfig = {
     host: emailHost,
     port: emailPort,
     secure: emailSecure, // true para 465, false para otros puertos
@@ -82,10 +103,19 @@ const createTransporter = () => {
     },
     tls: {
       // No rechazar conexiones no autorizadas (útil para desarrollo y pruebas)
-      rejectUnauthorized: false
+      rejectUnauthorized: false,
+      // Especificar la versión mínima de TLS (para mayor compatibilidad)
+      minVersion: 'TLSv1.2'
     },
     debug: true // Habilitar debug para ver más información
   };
+  
+  // Agregar opciones específicas para Hostinger
+  if (emailHost.includes('hostinger')) {
+    transporterConfig.connectionTimeout = 10000; // Mayor tiempo de espera para conexión
+    transporterConfig.greetingTimeout = 10000;   // Mayor tiempo de espera para saludo
+    transporterConfig.socketTimeout = 15000;     // Mayor tiempo de espera para socket
+  }
   
   console.log("Configurando transporter con:", JSON.stringify({
     ...transporterConfig, 
@@ -95,7 +125,8 @@ const createTransporter = () => {
     }
   }));
   
-  return nodemailer.createTransport(transporterConfig);
+  // Usar cualquier y aserciones de tipo para evitar problemas de compatibilidad
+  return nodemailer.createTransport(transporterConfig as any);
 };
 
 // Interfaz para el contenido del correo
@@ -109,7 +140,41 @@ interface EmailContent {
 // Función para verificar conexión al servidor SMTP
 async function verifySmtpConnection(): Promise<boolean> {
   try {
-    const transporter = createTransporter();
+    // Crear un transportador con una configuración más simple para prueba inicial
+    // Esto puede ayudar a identificar si el problema es de configuración o credenciales
+    console.log('Verificando conexión SMTP con configuración básica...');
+    
+    // Mostrar la configuración exacta que estamos usando (ocultando la contraseña)
+    console.log(`Verificando con host=${emailHost}, port=${emailPort}, user=${emailUser}, secure=${emailSecure}`);
+    
+    // Usar configuración TLS específica para servidores hostinger
+    const transporterConfig: SMTPTransportConfig = {
+      host: emailHost,
+      port: emailPort,
+      secure: emailSecure,
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      },
+      tls: {
+        // No rechazar certificados no válidos (útil para pruebas)
+        rejectUnauthorized: false,
+        // Forzar uso de TLSv1.2 que es ampliamente compatible
+        minVersion: 'TLSv1.2'
+      },
+      debug: true
+    };
+    
+    // Agregar opciones específicas para Hostinger
+    if (emailHost.includes('hostinger')) {
+      transporterConfig.connectionTimeout = 10000; // Mayor tiempo de espera para conexión
+      transporterConfig.greetingTimeout = 10000;   // Mayor tiempo de espera para saludo
+      transporterConfig.socketTimeout = 15000;     // Mayor tiempo de espera para socket
+    }
+    
+    const transporter = nodemailer.createTransport(transporterConfig as any);
+    
+    // Intentar verificar la conexión
     await transporter.verify();
     console.log('Verificación SMTP exitosa: El servidor está listo para recibir mensajes');
     return true;
@@ -117,6 +182,15 @@ async function verifySmtpConnection(): Promise<boolean> {
     console.error('Error al verificar conexión SMTP:', error);
     if (error instanceof Error) {
       console.error(`Mensaje de error en verificación: ${error.message}`);
+      
+      // Añadir información específica para errores comunes
+      if (error.message.includes('Invalid login') || error.message.includes('authentication failed')) {
+        console.error('Este es un error de autenticación. Por favor verifica que:');
+        console.error('1. El nombre de usuario y contraseña sean correctos');
+        console.error('2. La cuenta de correo tenga permisos para enviar correos a través de SMTP');
+        console.error('3. No haya restricciones de seguridad en el host (como autenticación de dos factores)');
+        console.error('4. Si has habilitado "App Passwords" o contraseñas de aplicación, usa esa contraseña en lugar de la contraseña principal');
+      }
     }
     throw error; // Re-lanzar el error para manejarlo en el nivel superior
   }
