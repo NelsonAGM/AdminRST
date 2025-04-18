@@ -136,9 +136,14 @@ export default function AdminPage() {
           description: result.message,
         });
       } else {
+        // Si hay un detalle específico del error, mostrarlo en la descripción
+        const errorDescription = result.detail 
+          ? `${result.message}. ${result.detail}` 
+          : result.message || "No se pudo conectar al servidor SMTP";
+          
         toast({
           title: "Error en la prueba",
-          description: result.message || "No se pudo conectar al servidor SMTP",
+          description: errorDescription,
           variant: "destructive",
         });
       }

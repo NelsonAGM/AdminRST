@@ -106,10 +106,29 @@ interface EmailContent {
   html?: string;
 }
 
+// Función para verificar conexión al servidor SMTP
+async function verifySmtpConnection(): Promise<boolean> {
+  try {
+    const transporter = createTransporter();
+    await transporter.verify();
+    console.log('Verificación SMTP exitosa: El servidor está listo para recibir mensajes');
+    return true;
+  } catch (error) {
+    console.error('Error al verificar conexión SMTP:', error);
+    if (error instanceof Error) {
+      console.error(`Mensaje de error en verificación: ${error.message}`);
+    }
+    throw error; // Re-lanzar el error para manejarlo en el nivel superior
+  }
+}
+
 // Función para enviar correo electrónico
 export async function sendEmail(content: EmailContent): Promise<boolean> {
   try {
     console.log(`Preparando envío de correo a: ${content.to} con asunto: ${content.subject}`);
+    
+    // Primero verificamos la conexión al servidor SMTP
+    await verifySmtpConnection();
     
     const transporter = createTransporter();
     
@@ -149,8 +168,7 @@ export async function sendEmail(content: EmailContent): Promise<boolean> {
       console.error(`Mensaje de error: ${error.message}`);
       console.error(`Stack: ${error.stack}`);
     }
-    console.error(JSON.stringify(error, null, 2));
-    return false;
+    throw error; // Re-lanzar el error para que sea manejado adecuadamente en routes.ts
   }
 }
 

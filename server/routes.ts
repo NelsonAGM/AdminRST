@@ -880,7 +880,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/email/test-connection", ensureAdmin, async (req, res) => {
     try {
       // Cargar la configuración actual
-      await loadEmailConfigFromDatabase();
+      const configLoaded = await loadEmailConfigFromDatabase();
+      
+      if (!configLoaded) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "La configuración del servidor SMTP está incompleta", 
+          detail: "Complete todos los campos de configuración SMTP antes de realizar la prueba"
+        });
+      }
       
       // Obtener el correo de destino para la prueba
       const testEmail = req.body.testEmail || "";
@@ -906,20 +914,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
       };
       
-      const result = await sendEmail(testEmailContent);
-      
-      if (result) {
+      try {
+        await sendEmail(testEmailContent);
         res.json({ success: true, message: "Prueba de conexión exitosa. Se ha enviado un correo de prueba." });
-      } else {
-        res.status(500).json({ success: false, message: "Error al enviar el correo de prueba." });
+      } catch (emailError) {
+        // Usamos el mensaje del error lanzado en sendEmail
+        let errorMessage = "Error al enviar el correo de prueba.";
+        let errorDetail = "";
+        
+        if (emailError instanceof Error) {
+          errorMessage = emailError.message;
+          
+          // Extraer detalles específicos si es un error de autenticación
+          if (errorMessage.includes('authentication failed') || errorMessage.includes('Invalid login')) {
+            errorDetail = "Verifica que las credenciales del servidor SMTP sean correctas";
+          } else if (errorMessage.includes('getaddrinfo')) {
+            errorDetail = "No se pudo conectar al servidor. Verifica el nombre de host";
+          } else if (errorMessage.includes('Connection refused')) {
+            errorDetail = "El servidor rechazó la conexión. Verifica puertos y configuración de firewall";
+          }
+        }
+        
+        res.status(500).json({ 
+          success: false, 
+          message: errorMessage,
+          detail: errorDetail
+        });
       }
     } catch (error) {
       console.error("Error al probar la conexión SMTP:", error);
       let errorMessage = "Error desconocido al probar la conexión.";
+      let errorDetail = "";
+      
       if (error instanceof Error) {
-        errorMessage = error.message;
+        // Manejar errores específicos de autenticación SMTP
+        if (error.message.includes("authentication failed") || error.message.includes("Invalid login")) {
+          errorMessage = "Error de autenticación: Las credenciales SMTP son incorrectas.";
+          errorDetail = "Verifica el usuario y contraseña del servidor SMTP.";
+        } else if (error.message.includes("getaddrinfo")) {
+          errorMessage = "Error de conexión: No se puede conectar al servidor SMTP.";
+          errorDetail = "Verifica el nombre del host SMTP y su disponibilidad.";
+        } else if (error.message.includes("Connection refused")) {
+          errorMessage = "Conexión rechazada por el servidor SMTP.";
+          errorDetail = "Verifica la dirección y el puerto del servidor.";
+        } else if (error.message.includes("certificate")) {
+          errorMessage = "Error de certificado SSL.";
+          errorDetail = "Hay un problema con el certificado SSL del servidor.";
+        } else {
+          errorMessage = error.message;
+        }
       }
-      res.status(500).json({ success: false, message: errorMessage });
+      
+      console.error("Detalle del error SMTP:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: errorMessage,
+        detail: errorDetail
+      });
     }
   });
 
