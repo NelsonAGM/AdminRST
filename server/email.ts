@@ -264,8 +264,17 @@ async function verifySmtpConnection(): Promise<boolean> {
   }
 }
 
+// Interfaz extendida para el contenido del correo con adjuntos
+export interface EmailContentWithAttachments extends EmailContent {
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
+}
+
 // Función para enviar correo electrónico
-export async function sendEmail(content: EmailContent): Promise<boolean> {
+export async function sendEmail(content: EmailContentWithAttachments): Promise<boolean> {
   try {
     console.log(`Preparando envío de correo a: ${content.to} con asunto: ${content.subject}`);
     
@@ -279,7 +288,8 @@ export async function sendEmail(content: EmailContent): Promise<boolean> {
     console.log(`Usuario de correo: ${emailUser}`);
     console.log(`Dirección de origen: ${emailFromAddress}`);
     
-    const mailOptions = {
+    // Preparar las opciones de correo
+    const mailOptions: any = {
       from: `"${emailFromName}" <${emailFromAddress}>`,
       to: content.to,
       subject: content.subject,
@@ -287,10 +297,17 @@ export async function sendEmail(content: EmailContent): Promise<boolean> {
       html: content.html,
     };
     
+    // Añadir adjuntos si existen
+    if (content.attachments && content.attachments.length > 0) {
+      mailOptions.attachments = content.attachments;
+      console.log(`Adjuntos: ${content.attachments.length} archivo(s)`);
+    }
+    
     console.log(`Opciones de correo: ${JSON.stringify({
       ...mailOptions,
-      // No mostrar el HTML completo para no saturar los logs
-      html: mailOptions.html ? '(contenido HTML presente)' : undefined
+      // No mostrar el HTML ni archivos binarios completos para no saturar los logs
+      html: mailOptions.html ? '(contenido HTML presente)' : undefined,
+      attachments: mailOptions.attachments ? `(${mailOptions.attachments.length} adjuntos)` : undefined
     })}`);
     
     const info = await transporter.sendMail(mailOptions);
