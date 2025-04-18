@@ -49,6 +49,8 @@ export default function AdminPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("company");
+  const [testEmail, setTestEmail] = useState("");
+  const [testingConnection, setTestingConnection] = useState(false);
   
   // Fetch company settings
   const { data: settings, isLoading } = useQuery<CompanySettings>({
@@ -109,6 +111,50 @@ export default function AdminPage() {
   // Handle form submission
   const onSubmit = (data: CompanySettings) => {
     updateMutation.mutate(data);
+  };
+  
+  // Test SMTP connection
+  const testSmtpConnection = async () => {
+    if (!testEmail) {
+      toast({
+        title: "Error",
+        description: "Por favor, ingrese una dirección de correo para realizar la prueba",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setTestingConnection(true);
+      const res = await apiRequest("POST", "/api/email/test-connection", { testEmail });
+      const result = await res.json();
+      
+      if (result.success) {
+        toast({
+          title: "Prueba exitosa",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Error en la prueba",
+          description: result.message || "No se pudo conectar al servidor SMTP",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      let errorMessage = "Error desconocido al probar la conexión";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingConnection(false);
+    }
   };
   
   // Check if user is admin, redirect otherwise

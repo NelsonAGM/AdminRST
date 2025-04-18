@@ -7,7 +7,7 @@ import {
   insertServiceOrderSchema, updateServiceOrderSchema, insertCompanySettingsSchema,
   insertUserSchema
 } from "@shared/schema";
-import { sendEmail, generateNewOrderEmail } from "./email";
+import { sendEmail, generateNewOrderEmail, loadEmailConfigFromDatabase } from "./email";
 
 // Middleware to check if user is authenticated
 const ensureAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -858,9 +858,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCompanySettingsSchema.parse(req.body);
       const settings = await storage.updateCompanySettings(validatedData);
+      
+      // Si hay cambios en la configuración SMTP, intentar recargar la configuración de email
+      if (validatedData.smtpHost || validatedData.smtpPort || validatedData.smtpUser || 
+          validatedData.smtpPassword || validatedData.smtpFromName || validatedData.smtpFromEmail) {
+        try {
+          await loadEmailConfigFromDatabase();
+        } catch (emailError) {
+          console.error("Error al recargar la configuración de email:", emailError);
+          // No fallamos la operación principal, solo registramos el error
+        }
+      }
+      
       res.json(settings);
     } catch (error) {
       res.status(400).json({ message: "Datos inválidos", error });
+    }
+  });
+  
+  // API para probar la conexión SMTP
+  app.post("/api/email/test-connection", ensureAdmin, async (req, res) => {
+    try {
+      // Cargar la configuración actual
+      await loadEmailConfigFromDatabase();
+      
+      // Obtener el correo de destino para la prueba
+      const testEmail = req.body.testEmail || "";
+      if (!testEmail) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Se requiere una dirección de correo para realizar la prueba" 
+        });
+      }
+      
+      // Enviar un correo de prueba
+      const testEmailContent = {
+        to: testEmail,
+        subject: "Prueba de conexión SMTP",
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #4f46e5;">Prueba de conexión SMTP exitosa</h2>
+            <p>Este es un correo de prueba para verificar la configuración del servidor SMTP.</p>
+            <p>La configuración del servidor SMTP está funcionando correctamente.</p>
+            <hr style="border: 1px solid #eee; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px;">Fecha y hora: ${new Date().toLocaleString()}</p>
+          </div>
+        `
+      };
+      
+      const result = await sendEmail(testEmailContent);
+      
+      if (result) {
+        res.json({ success: true, message: "Prueba de conexión exitosa. Se ha enviado un correo de prueba." });
+      } else {
+        res.status(500).json({ success: false, message: "Error al enviar el correo de prueba." });
+      }
+    } catch (error) {
+      console.error("Error al probar la conexión SMTP:", error);
+      let errorMessage = "Error desconocido al probar la conexión.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      res.status(500).json({ success: false, message: errorMessage });
     }
   });
 
