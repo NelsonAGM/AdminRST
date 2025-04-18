@@ -97,6 +97,7 @@ export default function OrdersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [sendingEmail, setSendingEmail] = useState(false);
   
   // Form for adding/editing service orders
   const form = useForm<ExtendedServiceOrder>({
@@ -316,6 +317,30 @@ export default function OrdersPage() {
     },
   });
   
+  // Send email mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: async (id: number) => {
+      setSendingEmail(true);
+      const res = await apiRequest("POST", `/api/service-orders/${id}/send-email`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setSendingEmail(false);
+      toast({
+        title: "Correo enviado",
+        description: data.message || "Correo enviado correctamente",
+      });
+    },
+    onError: (error) => {
+      setSendingEmail(false);
+      toast({
+        title: "Error",
+        description: `No se pudo enviar el correo: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Handle form submission for creating/updating orders
   const onSubmit = (data: ExtendedServiceOrder) => {
     // Antes de enviar, verificamos que tenemos valores válidos para los campos requeridos
@@ -449,40 +474,60 @@ export default function OrdersPage() {
     {
       header: "Acciones",
       accessorKey: "id" as keyof ServiceOrder,
-      cell: (row: ServiceOrder) => (
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleViewOrder(row);
-            }}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditOrder(row);
-            }}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOrderToDelete(row);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      ),
+      cell: (row: ServiceOrder) => {
+        // Obtener información del cliente para verificar si tiene email
+        const client = clients?.find(c => c.id === row.clientId);
+        const hasEmail = client?.email && client.email.trim() !== '';
+        
+        return (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewOrder(row);
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditOrder(row);
+              }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            {hasEmail && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sendEmailMutation.mutate(row.id);
+                }}
+                disabled={sendingEmail || sendEmailMutation.isPending}
+                title="Enviar notificación por correo"
+              >
+                <Mail className={`h-4 w-4 ${sendEmailMutation.isPending ? "animate-pulse" : "text-blue-500"}`} />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOrderToDelete(row);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
