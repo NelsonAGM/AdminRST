@@ -44,6 +44,7 @@ export default function ClientsPage() {
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
   // Form for adding/editing clients
@@ -68,6 +69,7 @@ export default function ClientsPage() {
       phone: "",
       address: "",
     });
+    setIsEditOpen(true);
   };
   
   // Set form values when editing a client
@@ -80,6 +82,7 @@ export default function ClientsPage() {
       phone: client.phone,
       address: client.address,
     });
+    setIsEditOpen(true);
   };
   
   // Fetch clients
@@ -238,7 +241,7 @@ export default function ClientsPage() {
           </p>
         </div>
         
-        <Dialog>
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleAddClient}>
               <Plus className="mr-2 h-4 w-4" /> Agregar Cliente
