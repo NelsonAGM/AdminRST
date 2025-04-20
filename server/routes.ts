@@ -294,12 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertEquipmentSchema.parse(req.body);
       
-      // Check if client exists
-      const client = await storage.getClient(validatedData.clientId);
-      if (!client) {
-        return res.status(404).json({ message: "Cliente no encontrado" });
-      }
-      
+      // Ya no necesitamos verificar cliente ya que el equipo puede existir sin cliente
       const equipment = await storage.createEquipment(validatedData);
       res.status(201).json(equipment);
     } catch (error) {
