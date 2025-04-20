@@ -59,12 +59,13 @@ export default function EquipmentPage() {
   const form = useForm<z.infer<typeof insertEquipmentSchema>>({
     resolver: zodResolver(insertEquipmentSchema),
     defaultValues: {
-      clientId: 0,
       type: "desktop",
       brand: "",
       model: "",
       serialNumber: "",
       description: "",
+      location: "",
+      company: "",
     },
   });
   
@@ -72,12 +73,13 @@ export default function EquipmentPage() {
   const handleAddEquipment = () => {
     setEquipmentToEdit(null);
     form.reset({
-      clientId: 0,
       type: "desktop",
       brand: "",
       model: "",
       serialNumber: "",
       description: "",
+      location: "",
+      company: "",
     });
   };
   

@@ -47,15 +47,16 @@ export const technicians = pgTable("technicians", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Equipment table
+// Equipment table - Desacoplado de clientes para mayor flexibilidad
 export const equipment = pgTable("equipment", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").references(() => clients.id).notNull(),
   type: equipmentTypeEnum("type").notNull(),
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   serialNumber: text("serial_number").notNull(),
   description: text("description"),
+  location: text("location"),  // Ubicación física del equipo (opcional)
+  company: text("company"),    // Empresa a la que pertenece (opcional, para referencia)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -142,7 +143,10 @@ export const insertClientSchema = createInsertSchema(clients).omit({ id: true, c
 
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true, createdAt: true });
 
-export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true, createdAt: true });
+export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true, createdAt: true }).extend({
+  location: z.string().optional(),
+  company: z.string().optional(),
+});
 
 export const insertServiceOrderSchema = createInsertSchema(serviceOrders).omit({ 
   id: true, 
