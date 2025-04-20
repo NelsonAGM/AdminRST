@@ -87,23 +87,19 @@ export default function EquipmentPage() {
   const handleEditEquipment = (equipment: Equipment) => {
     setEquipmentToEdit(equipment);
     form.reset({
-      clientId: equipment.clientId,
       type: equipment.type,
       brand: equipment.brand,
       model: equipment.model,
       serialNumber: equipment.serialNumber,
       description: equipment.description || "",
+      location: equipment.location || "",
+      company: equipment.company || "",
     });
   };
   
   // Fetch equipment
   const { data: equipmentList, isLoading } = useQuery<Equipment[]>({
     queryKey: ["/api/equipment"],
-  });
-  
-  // Fetch clients for the dropdown
-  const { data: clients } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
   });
   
   // Create equipment mutation
@@ -189,11 +185,7 @@ export default function EquipmentPage() {
     setIsDetailsOpen(true);
   };
   
-  // Get client name from client ID
-  const getClientName = (clientId: number) => {
-    const client = clients?.find(c => c.id === clientId);
-    return client?.name || "Cliente desconocido";
-  };
+
   
   // Equipment type display
   const getEquipmentTypeLabel = (type: string) => {
@@ -211,9 +203,14 @@ export default function EquipmentPage() {
   // Columns for equipment table
   const columns = [
     {
-      header: "Cliente",
-      accessorKey: "clientId",
-      cell: (row: Equipment) => getClientName(row.clientId),
+      header: "Empresa",
+      accessorKey: "company",
+      cell: (row: Equipment) => row.company || "-",
+    },
+    {
+      header: "Ubicación",
+      accessorKey: "location",
+      cell: (row: Equipment) => row.location || "-",
     },
     {
       header: "Tipo",
@@ -302,27 +299,26 @@ export default function EquipmentPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                 <FormField
                   control={form.control}
-                  name="clientId"
+                  name="company"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cliente</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                        defaultValue={field.value ? field.value.toString() : undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar cliente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients?.map(client => (
-                            <SelectItem key={client.id} value={client.id.toString()}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Empresa</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nombre de la empresa (opcional)" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ubicación</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ubicación física del equipo (opcional)" />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -442,8 +438,12 @@ export default function EquipmentPage() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Cliente</p>
-                  <p className="text-lg font-semibold">{getClientName(selectedEquipment.clientId)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Empresa</p>
+                  <p className="text-lg font-semibold">{selectedEquipment.company || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Ubicación</p>
+                  <p className="text-lg font-semibold">{selectedEquipment.location || "-"}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Tipo</p>
@@ -485,8 +485,8 @@ export default function EquipmentPage() {
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción eliminará permanentemente el equipo{" "}
-              <span className="font-semibold">{equipmentToDelete?.brand} {equipmentToDelete?.model}</span> de{" "}
-              <span className="font-semibold">{equipmentToDelete?.clientId && getClientName(equipmentToDelete.clientId)}</span>.
+              <span className="font-semibold">{equipmentToDelete?.brand} {equipmentToDelete?.model}</span>
+              {equipmentToDelete?.company && <span> de la empresa <span className="font-semibold">{equipmentToDelete.company}</span></span>}.
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
