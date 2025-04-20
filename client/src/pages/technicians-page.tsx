@@ -58,6 +58,7 @@ export default function TechniciansPage() {
   const [technicianToEdit, setTechnicianToEdit] = useState<TechnicianWithUser | null>(null);
   const [technicianToDelete, setTechnicianToDelete] = useState<TechnicianWithUser | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<TechnicianWithUser | null>(null);
   
   // Form for adding/editing technicians
@@ -78,6 +79,7 @@ export default function TechniciansPage() {
       specialization: "",
       status: "available",
     });
+    setIsEditOpen(true);
   };
   
   // Set form values when editing a technician
@@ -88,6 +90,7 @@ export default function TechniciansPage() {
       specialization: technician.specialization,
       status: technician.status,
     });
+    setIsEditOpen(true);
   };
   
   // Fetch technicians
@@ -275,7 +278,7 @@ export default function TechniciansPage() {
           </p>
         </div>
         
-        <Dialog>
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleAddTechnician}>
               <Plus className="mr-2 h-4 w-4" /> Agregar Técnico
