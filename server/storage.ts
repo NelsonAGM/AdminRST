@@ -277,7 +277,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listEquipmentByClient(clientId: number): Promise<Equipment[]> {
-    return await db.select().from(equipment).where(eq(equipment.clientId, clientId));
+    // Primero obtenemos el cliente para conocer su nombre
+    const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
+    if (!client) return [];
+    
+    // Si tenemos el cliente, buscamos equipos que coincidan con su nombre en el campo company
+    if (client.name) {
+      return await db.select().from(equipment).where(eq(equipment.company, client.name));
+    }
+    
+    return [];
   }
 
   // Service Order methods
@@ -825,9 +834,18 @@ export class MemStorage implements IStorage {
   }
 
   async listEquipmentByClient(clientId: number): Promise<Equipment[]> {
-    return Array.from(this.equipmentData.values()).filter(
-      (equipment) => equipment.clientId === clientId,
-    );
+    // Primero obtenemos el cliente para conocer su nombre
+    const client = this.clientsData.get(clientId);
+    if (!client) return [];
+    
+    // Si tenemos el cliente, buscamos equipos que coincidan con su nombre en el campo company
+    if (client.name) {
+      return Array.from(this.equipmentData.values()).filter(
+        (equipment) => equipment.company === client.name
+      );
+    }
+    
+    return [];
   }
 
   // Service Order methods
