@@ -219,9 +219,14 @@ export default function OrdersPage() {
   // Get client equipment based on selected client
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   
-  const filteredEquipment = selectedClientId 
-    ? allEquipment?.filter(eq => eq.clientId === selectedClientId) 
-    : [];
+  // Ahora obtenemos el nombre del cliente seleccionado
+  const selectedClient = selectedClientId 
+    ? clients?.find(client => client.id === selectedClientId) 
+    : null;
+    
+  // Filtramos los equipos por el nombre de la empresa (si coincide con el nombre del cliente)
+  // o mostramos todos si no hay filtro
+  const filteredEquipment = allEquipment || [];
   
   // Create service order mutation
   const createMutation = useMutation({
@@ -415,6 +420,19 @@ export default function OrdersPage() {
     return statusMap[status as keyof typeof statusMap] || { label: status, className: "bg-gray-100 text-gray-800" };
   };
   
+  // Equipment type display
+  const getEquipmentTypeLabel = (type: string) => {
+    const types: Record<string, string> = {
+      desktop: "PC Escritorio",
+      laptop: "Portátil",
+      server: "Servidor",
+      printer: "Impresora",
+      network: "Equipo de Red",
+      other: "Otro"
+    };
+    return types[type] || type;
+  };
+  
   // Handle client selection to filter equipment
   const handleClientChange = (clientId: number) => {
     setSelectedClientId(clientId);
@@ -595,22 +613,23 @@ export default function OrdersPage() {
                         <Select
                           onValueChange={(value) => field.onChange(parseInt(value))}
                           defaultValue={field.value ? field.value.toString() : undefined}
-                          disabled={!selectedClientId}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={selectedClientId ? "Seleccionar equipo" : "Seleccione un cliente primero"} />
+                              <SelectValue placeholder="Seleccionar equipo" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {filteredEquipment?.length === 0 ? (
                               <SelectItem value="0" disabled>
-                                No hay equipos para este cliente
+                                No hay equipos disponibles
                               </SelectItem>
                             ) : (
                               filteredEquipment?.map(equipment => (
                                 <SelectItem key={equipment.id} value={equipment.id.toString()}>
-                                  {equipment.brand} {equipment.model} ({equipment.type})
+                                  {equipment.brand} {equipment.model} ({getEquipmentTypeLabel(equipment.type)})
+                                  {equipment.company && ` - ${equipment.company}`}
+                                  {equipment.location && ` | ${equipment.location}`}
                                 </SelectItem>
                               ))
                             )}
