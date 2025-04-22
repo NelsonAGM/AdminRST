@@ -289,7 +289,7 @@ export default function EquipmentPage() {
               <Plus className="mr-2 h-4 w-4" /> Agregar Equipo
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-screen overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {equipmentToEdit ? "Editar Equipo" : "Agregar Equipo"}

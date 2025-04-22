@@ -286,7 +286,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const equipment = await storage.listEquipment();
       res.json(equipment);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener equipos" });
+      console.error('Error detallado al obtener equipos:', error);
+      res.status(500).json({ message: "Error al obtener equipos", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
