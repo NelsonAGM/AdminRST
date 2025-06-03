@@ -95,6 +95,11 @@ interface SMTPTransportConfig {
   connectionTimeout?: number;
   greetingTimeout?: number;
   socketTimeout?: number;
+  pool?: boolean;
+  maxConnections?: number;
+  maxMessages?: number;
+  rateLimit?: number;
+  rateDelta?: number;
 }
 
 // Crear el transporter de nodemailer
@@ -126,7 +131,7 @@ const createTransporter = () => {
     }
   }
   
-  // Crear configuración base común
+  // Crear configuración base común con optimizaciones para velocidad
   const transporterConfig: any = {
     host: emailHost,
     port: emailPort,
@@ -140,9 +145,24 @@ const createTransporter = () => {
       minVersion: 'TLSv1.2'      // Especifica versión mínima de TLS (para compatibilidad)
     },
     debug: true, // Habilitar depuración para diagnóstico
-    connectionTimeout: connectionTimeoutMs,
-    greetingTimeout: connectionTimeoutMs,
-    socketTimeout: connectionTimeoutMs * 1.5
+    connectionTimeout: Math.min(connectionTimeoutMs, 8000), // Máximo 8 segundos
+    greetingTimeout: Math.min(connectionTimeoutMs, 8000),   // Máximo 8 segundos
+    socketTimeout: Math.min(connectionTimeoutMs * 1.5, 12000), // Máximo 12 segundos
+    // Optimizaciones para velocidad de entrega
+    pool: true,               // Habilitar pool de conexiones para reutilizar conexiones
+    maxConnections: 5,        // Máximo 5 conexiones simultáneas
+    maxMessages: 100,         // Hasta 100 mensajes por conexión antes de cerrar
+    rateLimit: 14,           // Máximo 14 emails por segundo (buena velocidad sin ser spam)
+    rateDelta: 1000,         // Ventana de tiempo de 1 segundo para rate limit
+    // Configuraciones adicionales para mejorar la entrega
+    logger: false,           // Desactivar logging extenso para mayor velocidad
+    transactionLog: false,   // Desactivar log de transacciones para mayor velocidad
+    // Headers adicionales que pueden ayudar con la entrega rápida
+    headers: {
+      'X-Priority': '1',     // Alta prioridad
+      'X-MSMail-Priority': 'High',
+      'Importance': 'high'
+    }
   };
   
   // Aplicar autenticación específica si es necesario
@@ -273,6 +293,32 @@ export interface EmailContentWithAttachments extends EmailContent {
   }>;
 }
 
+// Función auxiliar para reintentos con backoff exponencial
+async function sendEmailWithRetry(
+  transporter: any,
+  mailOptions: any,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<any> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      return info;
+    } catch (error) {
+      console.log(`Intento ${attempt}/${maxRetries} falló:`, error instanceof Error ? error.message : error);
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Backoff exponencial: esperar más tiempo en cada intento
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`Esperando ${delay}ms antes del siguiente intento...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
 // Función para enviar correo electrónico
 export async function sendEmail(content: EmailContentWithAttachments): Promise<boolean> {
   try {
@@ -288,13 +334,37 @@ export async function sendEmail(content: EmailContentWithAttachments): Promise<b
     console.log(`Usuario de correo: ${emailUser}`);
     console.log(`Dirección de origen: ${emailFromAddress}`);
     
-    // Preparar las opciones de correo
+    // Preparar las opciones de correo con headers optimizados para entrega rápida
     const mailOptions: any = {
       from: `"${emailFromName}" <${emailFromAddress}>`,
       to: content.to,
       subject: content.subject,
       text: content.text,
       html: content.html,
+      // Headers para mejorar la velocidad y prioridad de entrega
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        'Importance': 'high',
+        'X-Mailer': 'Sistemas RST v1.0',
+        'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@sistemasrst.com>`,
+        // Headers para evitar ser marcado como spam
+        'X-Auto-Response-Suppress': 'OOF, DR, RN, NRN',
+        'List-Unsubscribe': '<mailto:no-reply@sistemasrst.com?subject=unsubscribe>',
+        // Headers para mejor deliverability
+        'Return-Path': emailFromAddress,
+        'Reply-To': emailFromAddress
+      },
+      // Configuraciones adicionales para entrega rápida
+      envelope: {
+        from: emailFromAddress,
+        to: content.to
+      },
+      // Deshabilitar seguimiento para mayor velocidad
+      trackingSettings: {
+        clickTracking: { enable: false },
+        openTracking: { enable: false }
+      }
     };
     
     // Añadir adjuntos si existen
@@ -310,7 +380,8 @@ export async function sendEmail(content: EmailContentWithAttachments): Promise<b
       attachments: mailOptions.attachments ? `(${mailOptions.attachments.length} adjuntos)` : undefined
     })}`);
     
-    const info = await transporter.sendMail(mailOptions);
+    // Usar la función de reintento para mejorar la confiabilidad
+    const info = await sendEmailWithRetry(transporter, mailOptions, 3, 500);
     
     console.log(`Correo enviado correctamente: ${info.messageId}`);
     if (info.accepted && info.accepted.length > 0) {
@@ -318,6 +389,11 @@ export async function sendEmail(content: EmailContentWithAttachments): Promise<b
     }
     if (info.rejected && info.rejected.length > 0) {
       console.log(`Direcciones rechazadas: ${info.rejected.join(', ')}`);
+    }
+    
+    // Cerrar la conexión del transporter para liberar recursos
+    if (transporter && typeof transporter.close === 'function') {
+      transporter.close();
     }
     
     return true;
