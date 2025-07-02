@@ -37,7 +37,8 @@ import {
   Upload, 
   Printer,
   Wrench,
-  Mail
+  Mail,
+  Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -98,6 +99,7 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
   
   // Form for adding/editing service orders
   const form = useForm<ExtendedServiceOrder>({
@@ -549,6 +551,56 @@ export default function OrdersPage() {
     },
   ];
 
+  // Manejar selección individual
+  const handleSelectOrder = (orderId: number) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(orderId)
+        ? prev.filter((id) => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  // Manejar selección/deselección de todos
+  const handleSelectAll = () => {
+    if (!orders) return;
+    if (selectedOrderIds.length === orders.length) {
+      setSelectedOrderIds([]);
+    } else {
+      setSelectedOrderIds(orders.map((o) => o.id));
+    }
+  };
+
+  // Botón para descargar seleccionadas (aún no implementa la llamada al backend)
+  const handleDownloadSelected = () => {
+    // Aquí se hará la llamada al backend en el siguiente paso
+    alert(`Descargar PDFs de órdenes: ${selectedOrderIds.join(", ")}`);
+  };
+
+  // Nueva columna de selección
+  const selectionColumn = {
+    header: (
+      <input
+        type="checkbox"
+        checked={orders && selectedOrderIds.length === orders.length && orders.length > 0}
+        onChange={handleSelectAll}
+        aria-label="Seleccionar todas"
+      />
+    ),
+    accessorKey: "select" as any,
+    cell: (row: ServiceOrder) => (
+      <input
+        type="checkbox"
+        checked={selectedOrderIds.includes(row.id)}
+        onChange={() => handleSelectOrder(row.id)}
+        aria-label={`Seleccionar orden ${row.orderNumber}`}
+        onClick={e => e.stopPropagation()}
+      />
+    ),
+  };
+
+  // Insertar la columna de selección al inicio
+  const columnsWithSelection = [selectionColumn, ...columns];
+
   return (
     <DashboardLayout title="Órdenes de Servicio">
       <div className="mb-4 flex justify-between items-center">
@@ -558,10 +610,18 @@ export default function OrdersPage() {
             Administra las solicitudes de servicio técnico
           </p>
         </div>
-        
-        <Button onClick={handleAddOrder}>
-          <Plus className="mr-2 h-4 w-4" /> Nueva Orden
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleDownloadSelected}
+            disabled={selectedOrderIds.length === 0}
+            variant="outline"
+          >
+            <Download className="mr-2 h-4 w-4" /> Descargar seleccionadas en PDF
+          </Button>
+          <Button onClick={handleAddOrder}>
+            <Plus className="mr-2 h-4 w-4" /> Nueva Orden
+          </Button>
+        </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -914,7 +974,7 @@ export default function OrdersPage() {
       </div>
       
       <DataTable 
-        columns={columns} 
+        columns={columnsWithSelection} 
         data={orders || []} 
         loading={isLoading}
         searchColumn="orderNumber"
