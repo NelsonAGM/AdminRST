@@ -364,3 +364,50 @@ function addFooter(doc: PDFKit.PDFDocument, companySettings: CompanySettings) {
     { align: 'center', width: doc.page.width - 100 }
   );
 }
+
+// Nueva función: Generar PDF múltiple
+export async function generateMultipleServiceOrdersPDF(
+  orders: {
+    serviceOrder: ServiceOrder,
+    client: Client,
+    equipment: Equipment,
+    technician: Technician,
+    companySettings: CompanySettings
+  }[]
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Órdenes de Servicio` ,
+          Author: orders[0]?.companySettings?.name || 'Sistemas RST',
+          Subject: 'Órdenes de Servicio',
+        }
+      });
+      const buffers: Buffer[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        resolve(pdfData);
+      });
+      // Generar una página por cada orden
+      orders.forEach((item, idx) => {
+        if (idx > 0) doc.addPage();
+        createServiceOrderPDFContent(
+          doc,
+          item.serviceOrder,
+          item.client,
+          item.equipment,
+          item.technician,
+          item.companySettings
+        );
+      });
+      doc.end();
+    } catch (error) {
+      console.error('Error al generar PDF múltiple:', error);
+      reject(error);
+    }
+  });
+}

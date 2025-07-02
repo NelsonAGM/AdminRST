@@ -8,7 +8,7 @@ import {
   insertUserSchema
 } from "@shared/schema";
 import { sendEmail, generateNewOrderEmail, loadEmailConfigFromDatabase } from "./email";
-import { generateServiceOrderPDF } from "./pdf-generator";
+import { generateServiceOrderPDF, generateMultipleServiceOrdersPDF } from "./pdf-generator";
 
 // Middleware to check if user is authenticated
 const ensureAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -453,13 +453,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Obtener la configuración de la empresa para el email
           const companySettings = await storage.getCompanySettings();
           
+          // Obtener el técnico si está asignado
+          let technician = null;
+          if (serviceOrder.technicianId) {
+            technician = await storage.getTechnician(serviceOrder.technicianId);
+          }
+          // Si no hay técnico, usar un objeto por defecto
+          if (!technician) {
+            technician = {
+              id: 0,
+              userId: 0,
+              specialization: 'No asignado',
+              status: 'available' as const,
+              createdAt: new Date()
+            };
+          }
+          
           // Generar el contenido del correo electrónico
           const emailHtml = generateNewOrderEmail(
             serviceOrder.orderNumber,
             client.name,
             `${equipment.brand} ${equipment.model}`,
             serviceOrder.description,
-            companySettings || {
+            (companySettings as any) && (companySettings as any).smtpHost !== undefined ? companySettings as any : {
               id: 0,
               name: 'Sistemas RST',
               logoUrl: null,
@@ -468,8 +484,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               email: '',
               website: null,
               taxId: null,
+              smtpHost: null,
+              smtpPort: null,
+              smtpSecure: true,
+              smtpUser: null,
+              smtpPassword: null,
+              smtpFromName: null,
+              smtpFromEmail: null,
               updatedAt: new Date()
-            }
+            } as any
           );
           
           // Enviar el correo electrónico de forma síncrona para tener mejor registro
@@ -658,13 +681,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Equipo no encontrado" });
       }
       
-      // Obtener información del técnico si existe
-      let technician;
+      // Obtener el técnico si está asignado
+      let technician = null;
       if (serviceOrder.technicianId) {
         technician = await storage.getTechnician(serviceOrder.technicianId);
       }
-      
-      // Si no hay técnico asignado, usar datos mínimos
+      // Si no hay técnico, usar un objeto por defecto
       if (!technician) {
         technician = {
           id: 0,
@@ -676,25 +698,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener la configuración de la empresa
-      const companySettings = await storage.getCompanySettings() || {
-        id: 0,
-        name: 'Sistemas RST',
-        logoUrl: null,
-        address: '',
-        phone: '',
-        email: '',
-        website: null,
-        taxId: null,
-        updatedAt: new Date()
-      };
+      const companySettings = await storage.getCompanySettings();
       
-      // Generar el contenido del correo
+      // Generar el contenido del correo electrónico
       const emailHtml = generateNewOrderEmail(
         serviceOrder.orderNumber,
         client.name,
         `${equipment.brand} ${equipment.model}`,
         serviceOrder.description,
-        companySettings
+        (companySettings as any) && (companySettings as any).smtpHost !== undefined ? companySettings as any : {
+          id: 0,
+          name: 'Sistemas RST',
+          logoUrl: null,
+          address: '',
+          phone: '',
+          email: '',
+          website: null,
+          taxId: null,
+          smtpHost: null,
+          smtpPort: null,
+          smtpSecure: true,
+          smtpUser: null,
+          smtpPassword: null,
+          smtpFromName: null,
+          smtpFromEmail: null,
+          updatedAt: new Date()
+        } as any
       );
       
       // Generar el PDF de la orden
@@ -707,7 +736,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           client,
           equipment,
           technician,
-          companySettings
+          (companySettings as any) && (companySettings as any).smtpHost !== undefined ? companySettings as any : {
+            id: 0,
+            name: 'Sistemas RST',
+            logoUrl: null,
+            address: '',
+            phone: '',
+            email: '',
+            website: null,
+            taxId: null,
+            smtpHost: null,
+            smtpPort: null,
+            smtpSecure: true,
+            smtpUser: null,
+            smtpPassword: null,
+            smtpFromName: null,
+            smtpFromEmail: null,
+            updatedAt: new Date()
+          } as any
         );
         
         console.log(`PDF generado correctamente, tamaño: ${pdfBuffer.length} bytes`);
@@ -767,6 +813,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Error al reenviar correo", 
         error: error instanceof Error ? error.message : String(error) 
       });
+    }
+  });
+  
+  // Endpoint para descargar varias órdenes de servicio en un solo PDF
+  app.post("/api/service-orders/bulk-pdf", ensureAuthenticated, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Debes enviar un array de IDs de órdenes." });
+      }
+      // Obtener datos completos de cada orden
+      const companySettings = await storage.getCompanySettings();
+      const ordersData = [];
+      for (const id of ids) {
+        const serviceOrder = await storage.getServiceOrder(id);
+        if (!serviceOrder) continue;
+        const client = await storage.getClient(serviceOrder.clientId);
+        const equipment = await storage.getEquipment(serviceOrder.equipmentId);
+        let technician = null;
+        if (serviceOrder.technicianId) {
+          technician = await storage.getTechnician(serviceOrder.technicianId);
+        }
+        if (!technician) {
+          technician = {
+            id: 0,
+            userId: 0,
+            specialization: 'No asignado',
+            status: 'available' as const,
+            createdAt: new Date()
+          };
+        }
+        if (!client || !equipment) continue;
+        ordersData.push({
+          serviceOrder,
+          client,
+          equipment,
+          technician,
+          companySettings: companySettings as any
+        });
+      }
+      if (ordersData.length === 0) {
+        return res.status(404).json({ message: "No se encontraron órdenes válidas." });
+      }
+      // Generar el PDF múltiple
+      const pdfBuffer = await generateMultipleServiceOrdersPDF(ordersData);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="ordenes_servicio.pdf"');
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error al generar PDF múltiple:", error);
+      res.status(500).json({ message: "Error al generar el PDF múltiple." });
     }
   });
   
@@ -901,14 +998,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/company-settings", ensureAuthenticated, async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      
-      if (!settings) {
-        return res.status(404).json({ message: "Configuración no encontrada" });
-      }
-      
       res.json(settings);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener configuración de la empresa" });
+      res.status(500).json({ message: "Error al obtener configuración de empresa" });
     }
   });
   
@@ -916,175 +1008,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCompanySettingsSchema.parse(req.body);
       const settings = await storage.updateCompanySettings(validatedData);
-      
-      // Si hay cambios en la configuración SMTP, intentar recargar la configuración de email
-      if (validatedData.smtpHost || validatedData.smtpPort || validatedData.smtpUser || 
-          validatedData.smtpPassword || validatedData.smtpFromName || validatedData.smtpFromEmail) {
-        try {
-          await loadEmailConfigFromDatabase();
-        } catch (emailError) {
-          console.error("Error al recargar la configuración de email:", emailError);
-          // No fallamos la operación principal, solo registramos el error
-        }
-      }
-      
       res.json(settings);
     } catch (error) {
       res.status(400).json({ message: "Datos inválidos", error });
     }
   });
   
-  // API para probar la conexión SMTP
-  app.post("/api/email/test-connection", ensureAdmin, async (req, res) => {
-    try {
-      // Cargar la configuración actual
-      const configLoaded = await loadEmailConfigFromDatabase();
-      
-      if (!configLoaded) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "La configuración del servidor SMTP está incompleta", 
-          detail: "Complete todos los campos de configuración SMTP antes de realizar la prueba"
-        });
-      }
-      
-      // Obtener el correo de destino para la prueba
-      const testEmail = req.body.testEmail || "";
-      if (!testEmail) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Se requiere una dirección de correo para realizar la prueba" 
-        });
-      }
-      
-      // Preparar el contenido del correo de prueba
-      const testEmailContent = {
-        to: testEmail,
-        subject: "Prueba de conexión SMTP",
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 5px;">
-            <h2 style="color: #4f46e5;">Prueba de conexión SMTP exitosa</h2>
-            <p>Este es un correo de prueba para verificar la configuración del servidor SMTP.</p>
-            <p>La configuración del servidor SMTP está funcionando correctamente.</p>
-            <hr style="border: 1px solid #eee; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">Fecha y hora: ${new Date().toLocaleString()}</p>
-          </div>
-        `
-      };
-      
-      // Intentar con las credenciales actuales
-      try {
-        console.log("Intentando enviar correo con la configuración proporcionada...");
-        await sendEmail(testEmailContent);
-        return res.json({ 
-          success: true, 
-          message: "Prueba de conexión exitosa. Se ha enviado un correo de prueba." 
-        });
-      } catch (primaryError) {
-        console.error("Error con la configuración primaria:", primaryError);
-        
-        // Si falla con el servidor de Hostinger, informamos el error específico
-        let errorMessage = "Error al enviar el correo de prueba.";
-        let errorDetail = "";
-        
-        if (primaryError instanceof Error) {
-          errorMessage = primaryError.message;
-          
-          // Extraer detalles específicos según el tipo de error
-          if (errorMessage.includes('authentication failed') || errorMessage.includes('Invalid login')) {
-            errorDetail = "Verifica que las credenciales del servidor SMTP sean correctas. " +
-                          "Importante: Para Hostinger, asegúrate de usar tu dirección de correo electrónico completa como nombre de usuario (ej: no-reply@sistemasrst.com). " +
-                          "Es posible que necesites configurar una contraseña específica para aplicaciones en el panel de Hostinger.";
-          } else if (errorMessage.includes('getaddrinfo')) {
-            errorDetail = "No se pudo conectar al servidor. Verifica el nombre de host: " + 
-                          "Para Hostinger, el host correcto es 'smtp.hostinger.com'.";
-          } else if (errorMessage.includes('Connection refused')) {
-            errorDetail = "El servidor rechazó la conexión. Verifica puertos: " +
-                          "Para Hostinger, usa el puerto 465 con SSL/TLS activado, o el puerto 587 sin SSL/TLS.";
-          } else if (errorMessage.includes('certificate')) { 
-            errorDetail = "Hay un problema con el certificado SSL. " +
-                          "Si usas Hostinger, asegúrate de usar el puerto 465 con SSL/TLS activado.";
-          }
-        }
-        
-        return res.status(500).json({ 
-          success: false, 
-          message: errorMessage,
-          detail: errorDetail
-        });
-      }
-    } catch (error) {
-      console.error("Error al probar la conexión SMTP:", error);
-      let errorMessage = "Error desconocido al probar la conexión.";
-      let errorDetail = "";
-      
-      if (error instanceof Error) {
-        // Manejar errores específicos de autenticación SMTP
-        if (error.message.includes("authentication failed") || error.message.includes("Invalid login")) {
-          errorMessage = "Error de autenticación: Las credenciales SMTP son incorrectas.";
-          errorDetail = "Verifica el usuario y contraseña del servidor SMTP.";
-        } else if (error.message.includes("getaddrinfo")) {
-          errorMessage = "Error de conexión: No se puede conectar al servidor SMTP.";
-          errorDetail = "Verifica el nombre del host SMTP y su disponibilidad.";
-        } else if (error.message.includes("Connection refused")) {
-          errorMessage = "Conexión rechazada por el servidor SMTP.";
-          errorDetail = "Verifica la dirección y el puerto del servidor.";
-        } else if (error.message.includes("certificate")) {
-          errorMessage = "Error de certificado SSL.";
-          errorDetail = "Hay un problema con el certificado SSL del servidor.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      console.error("Detalle del error SMTP:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: errorMessage,
-        detail: errorDetail
-      });
-    }
-  });
-
   // Monthly Revenue routes
-  app.get("/api/revenue/current", ensureAdmin, async (req, res) => {
+  app.get("/api/monthly-revenue/current", ensureAuthenticated, async (req, res) => {
     try {
-      // Calcular y obtener los ingresos del mes actual
       const revenue = await storage.calculateCurrentMonthRevenue();
       res.json(revenue);
     } catch (error) {
-      console.error("Error al obtener ingresos actuales:", error);
-      res.status(500).json({ message: "Error al obtener ingresos actuales" });
-    }
-  });
-
-  app.get("/api/revenue/history", ensureAdmin, async (req, res) => {
-    try {
-      // Obtener el historial de ingresos (limitar a los últimos 12 meses)
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 12;
-      const history = await storage.getRevenueHistory(limit);
-      res.json(history);
-    } catch (error) {
-      console.error("Error al obtener historial de ingresos:", error);
-      res.status(500).json({ message: "Error al obtener historial de ingresos" });
-    }
-  });
-
-  app.get("/api/revenue/year/:year", ensureAdmin, async (req, res) => {
-    try {
-      const year = parseInt(req.params.year);
-      if (isNaN(year)) {
-        return res.status(400).json({ message: "Año inválido" });
-      }
-
-      const revenueData = await storage.getMonthlyRevenuesByYear(year);
-      res.json(revenueData);
-    } catch (error) {
-      console.error("Error al obtener ingresos por año:", error);
-      res.status(500).json({ message: "Error al obtener ingresos por año" });
+      res.status(500).json({ message: "Error al calcular ingresos del mes actual" });
     }
   });
   
-  const httpServer = createServer(app);
-  return httpServer;
+  app.get("/api/monthly-revenue/:year", ensureAuthenticated, async (req, res) => {
+    try {
+      const year = parseInt(req.params.year);
+      const revenues = await storage.getMonthlyRevenuesByYear(year);
+      res.json(revenues);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener ingresos mensuales" });
+    }
+  });
+  
+  app.get("/api/monthly-revenue/history/:limit", ensureAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.params.limit);
+      const history = await storage.getRevenueHistory(limit);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener historial de ingresos" });
+    }
+  });
+  
+  // Create HTTP server
+  const server = createServer(app);
+  
+  return server;
 }

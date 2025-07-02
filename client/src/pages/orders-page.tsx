@@ -570,10 +570,42 @@ export default function OrdersPage() {
     }
   };
 
-  // Botón para descargar seleccionadas (aún no implementa la llamada al backend)
-  const handleDownloadSelected = () => {
-    // Aquí se hará la llamada al backend en el siguiente paso
-    alert(`Descargar PDFs de órdenes: ${selectedOrderIds.join(", ")}`);
+  // Botón para descargar seleccionadas (ahora sí llama al backend)
+  const handleDownloadSelected = async () => {
+    if (selectedOrderIds.length === 0) return;
+    try {
+      const response = await fetch("/api/service-orders/bulk-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ ids: selectedOrderIds }),
+        credentials: "include"
+      });
+      if (!response.ok) {
+        toast({
+          title: "Error",
+          description: "No se pudo generar el PDF. Intenta de nuevo.",
+          variant: "destructive"
+        });
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ordenes_servicio.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al descargar el PDF.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Nueva columna de selección
