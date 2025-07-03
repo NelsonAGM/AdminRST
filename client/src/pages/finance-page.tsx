@@ -44,23 +44,23 @@ export default function FinancePage() {
   
   // Obtener los datos de ingresos actuales
   const { data: currentMonthData, isLoading: isLoadingCurrent } = useQuery({
-    queryKey: ["/api/revenue/current"],
+    queryKey: ["/api/monthly-revenue/current"],
   });
   
   // Obtener el historial de ingresos de todo el año
   const { data: yearlyData, isLoading: isLoadingYearly } = useQuery<MonthlyRevenue[]>({
-    queryKey: ["/api/revenue/year", selectedYear],
+    queryKey: ["/api/monthly-revenue/year", selectedYear],
   });
   
   // Obtener el historial de ingresos (últimos 12 meses)
   const { data: historyData, isLoading: isLoadingHistory } = useQuery<MonthlyRevenue[]>({
-    queryKey: ["/api/revenue/history"],
+    queryKey: ["/api/monthly-revenue/history"],
   });
   
   // Calcular ingresos del mes actual (forzar un recálculo)
   const calculateCurrentRevenue = async () => {
     try {
-      const response = await fetch('/api/revenue/current', {
+      const response = await fetch('/api/monthly-revenue/current', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,9 +79,9 @@ export default function FinancePage() {
       
       // Actualizar las consultas
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/revenue/current'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/revenue/history'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/revenue/year', selectedYear] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/monthly-revenue/current'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/monthly-revenue/history'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/monthly-revenue/year', selectedYear] }),
       ]);
       
     } catch (error) {

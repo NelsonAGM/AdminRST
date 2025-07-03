@@ -1059,9 +1059,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/monthly-revenue/history/:limit", ensureAuthenticated, async (req, res) => {
+  app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
     try {
-      const limit = parseInt(req.params.limit);
+      const limit = 12; // Default to last 12 months
       const history = await storage.getRevenueHistory(limit);
       res.json(history);
     } catch (error) {

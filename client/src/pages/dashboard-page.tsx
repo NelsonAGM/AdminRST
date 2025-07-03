@@ -63,7 +63,7 @@ export default function DashboardPage() {
   
   // Fetch current month revenue
   const { data: currentMonthRevenue, isLoading: isLoadingRevenue } = useQuery({
-    queryKey: ["/api/revenue/current"],
+    queryKey: ["/api/monthly-revenue/current"],
     enabled: true,
   });
   
