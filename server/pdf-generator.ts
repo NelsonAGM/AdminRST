@@ -4,6 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 import puppeteer from 'puppeteer';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Función para generar PDF de orden de servicio
 export async function generateServiceOrderPDF(
