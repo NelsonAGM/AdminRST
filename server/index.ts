@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { configureEmailService } from "./email";
+import puppeteer from 'puppeteer';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -36,6 +37,17 @@ app.use((req, res, next) => {
 
   next();
 });
+
+if (process.env.RENDER) {
+  puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] })
+    .then(browser => browser.close())
+    .catch(async () => {
+      console.log('Descargando Chromium en runtime...');
+      await import('child_process').then(({ execSync }) => {
+        execSync('npx puppeteer browsers install chrome', { stdio: 'inherit' });
+      });
+    });
+}
 
 (async () => {
   const server = await registerRoutes(app);
