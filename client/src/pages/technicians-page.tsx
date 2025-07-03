@@ -196,16 +196,16 @@ export default function TechniciansPage() {
   const columns = [
     {
       header: "Nombre",
-      accessorKey: "fullName",
+      accessorKey: "fullName" as keyof TechnicianWithUser,
       cell: (row: TechnicianWithUser) => row.fullName || getUserName(row.userId),
     },
     {
       header: "Especialización",
-      accessorKey: "specialization",
+      accessorKey: "specialization" as keyof TechnicianWithUser,
     },
     {
       header: "Estado",
-      accessorKey: "status",
+      accessorKey: "status" as keyof TechnicianWithUser,
       cell: (row: TechnicianWithUser) => {
         const statusConfig = {
           available: { label: "Disponible", className: "bg-green-100 text-green-800" },
@@ -225,12 +225,12 @@ export default function TechniciansPage() {
     },
     {
       header: "Email",
-      accessorKey: "email",
+      accessorKey: "email" as keyof TechnicianWithUser,
       cell: (row: TechnicianWithUser) => row.email || "N/A",
     },
     {
       header: "Acciones",
-      accessorKey: "id",
+      accessorKey: "id" as keyof TechnicianWithUser,
       cell: (row: TechnicianWithUser) => (
         <div className="flex items-center space-x-2">
           <Button

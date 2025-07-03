@@ -177,23 +177,23 @@ export default function ClientsPage() {
   const columns = [
     {
       header: "Nombre",
-      accessorKey: "name",
+      accessorKey: "name" as keyof Client,
     },
     {
       header: "Contacto",
-      accessorKey: "contactName",
+      accessorKey: "contactName" as keyof Client,
     },
     {
       header: "Email",
-      accessorKey: "email",
+      accessorKey: "email" as keyof Client,
     },
     {
       header: "Teléfono",
-      accessorKey: "phone",
+      accessorKey: "phone" as keyof Client,
     },
     {
       header: "Acciones",
-      accessorKey: "id",
+      accessorKey: "id" as keyof Client,
       cell: (row: Client) => (
         <div className="flex items-center space-x-2">
           <Button

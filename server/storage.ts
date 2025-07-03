@@ -130,7 +130,17 @@ export class DatabaseStorage implements IStorage {
         name: "Sistemas RST",
         address: "Av. Principal 123",
         phone: "+123456789",
-        email: "info@sistemasrst.com"
+        email: "info@sistemasrst.com",
+        logoUrl: null,
+        website: null,
+        taxId: null,
+        smtpHost: null,
+        smtpPort: null,
+        smtpSecure: true,
+        smtpUser: null,
+        smtpPassword: null,
+        smtpFromName: null,
+        smtpFromEmail: null,
       }).onConflictDoNothing();
     }
   }
@@ -254,7 +264,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEquipment(insertEquipment: InsertEquipment): Promise<Equipment> {
-    const [newEquipment] = await db.insert(equipment).values(insertEquipment).returning();
+    // Asegurarnos de que description, location y company son null si no vienen
+    const equipmentData = {
+      ...insertEquipment,
+      description: insertEquipment.description ?? null,
+      location: insertEquipment.location ?? null,
+      company: insertEquipment.company ?? null,
+    };
+    
+    const [newEquipment] = await db.insert(equipment).values(equipmentData).returning();
     return newEquipment;
   }
 
@@ -647,6 +665,13 @@ export class MemStorage implements IStorage {
       email: "info@sistemasrst.com",
       website: null,
       taxId: null,
+      smtpHost: null,
+      smtpPort: null,
+      smtpSecure: true,
+      smtpUser: null,
+      smtpPassword: null,
+      smtpFromName: null,
+      smtpFromEmail: null,
       updatedAt: new Date()
     });
   }
@@ -805,10 +830,15 @@ export class MemStorage implements IStorage {
     const id = this.equipmentCurrentId++;
     // Asegurarnos de que description es null si no viene
     const description = insertEquipment.description ?? null;
+    // Asegurarnos de que location y company son null si no vienen
+    const location = insertEquipment.location ?? null;
+    const company = insertEquipment.company ?? null;
     
     const equipment: Equipment = { 
       ...insertEquipment, 
       description,
+      location,
+      company,
       id, 
       createdAt: new Date() 
     };
@@ -946,12 +976,26 @@ export class MemStorage implements IStorage {
     const logoUrl = settingsData.logoUrl ?? null;
     const website = settingsData.website ?? null;
     const taxId = settingsData.taxId ?? null;
+    const smtpHost = settingsData.smtpHost ?? null;
+    const smtpPort = settingsData.smtpPort ?? null;
+    const smtpSecure = settingsData.smtpSecure ?? true;
+    const smtpUser = settingsData.smtpUser ?? null;
+    const smtpPassword = settingsData.smtpPassword ?? null;
+    const smtpFromName = settingsData.smtpFromName ?? null;
+    const smtpFromEmail = settingsData.smtpFromEmail ?? null;
     
     const updatedSettings: CompanySettings = { 
       ...settingsData,
       logoUrl,
       website,
       taxId,
+      smtpHost,
+      smtpPort,
+      smtpSecure,
+      smtpUser,
+      smtpPassword,
+      smtpFromName,
+      smtpFromEmail,
       id: 1, 
       updatedAt: new Date()
     };

@@ -71,20 +71,20 @@ export default function DashboardPage() {
   const ordersColumns = [
     {
       header: "ID",
-      accessorKey: "orderNumber",
+      accessorKey: "orderNumber" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => <span className="font-medium">{row.orderNumber}</span>,
     },
     {
       header: "Cliente",
-      accessorKey: "clientName",
+      accessorKey: "clientName" as keyof ServiceOrder,
     },
     {
       header: "Tipo",
-      accessorKey: "description",
+      accessorKey: "description" as keyof ServiceOrder,
     },
     {
       header: "Estado",
-      accessorKey: "status",
+      accessorKey: "status" as keyof ServiceOrder,
       cell: (row: ServiceOrder) => {
         const statusConfig = {
           pending: { label: "Pendiente", className: "bg-yellow-100 text-yellow-800" },
@@ -105,7 +105,7 @@ export default function DashboardPage() {
     },
     {
       header: "Técnico",
-      accessorKey: "technicianName",
+      accessorKey: "technicianName" as keyof ServiceOrder,
     },
   ];
   
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-blue-900">Ingresos Totales</h3>
                   <p className="text-3xl font-bold text-primary">
-                    ${parseFloat(currentMonthRevenue?.totalAmount || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    ${parseFloat((currentMonthRevenue as any)?.totalAmount || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-sm text-gray-500">Mes actual</p>
                 </div>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-green-900">Órdenes Completadas</h3>
                   <p className="text-3xl font-bold text-green-600">
-                    {currentMonthRevenue?.orderCount || 0}
+                    {(currentMonthRevenue as any)?.orderCount || 0}
                   </p>
                   <p className="text-sm text-gray-500">Servicios facturados</p>
                 </div>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-amber-900">Valor Promedio</h3>
                   <p className="text-3xl font-bold text-amber-600">
-                    ${parseFloat(currentMonthRevenue?.averageOrderValue || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    ${parseFloat((currentMonthRevenue as any)?.averageOrderValue || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-sm text-gray-500">Por orden de servicio</p>
                 </div>

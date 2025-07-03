@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "postinstall": "puppeteer install"
+    "postinstall": "puppeteer install",
+    "prepare": "puppeteer install"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

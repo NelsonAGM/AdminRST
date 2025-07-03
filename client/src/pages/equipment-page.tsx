@@ -204,17 +204,17 @@ export default function EquipmentPage() {
   const columns = [
     {
       header: "Empresa",
-      accessorKey: "company",
+      accessorKey: "company" as keyof Equipment,
       cell: (row: Equipment) => row.company || "-",
     },
     {
       header: "Ubicación",
-      accessorKey: "location",
+      accessorKey: "location" as keyof Equipment,
       cell: (row: Equipment) => row.location || "-",
     },
     {
       header: "Tipo",
-      accessorKey: "type",
+      accessorKey: "type" as keyof Equipment,
       cell: (row: Equipment) => (
         <Badge variant="outline" className="bg-blue-50 text-blue-700">
           {getEquipmentTypeLabel(row.type)}
@@ -223,19 +223,19 @@ export default function EquipmentPage() {
     },
     {
       header: "Marca",
-      accessorKey: "brand",
+      accessorKey: "brand" as keyof Equipment,
     },
     {
       header: "Modelo",
-      accessorKey: "model",
+      accessorKey: "model" as keyof Equipment,
     },
     {
       header: "Nº de Serie",
-      accessorKey: "serialNumber",
+      accessorKey: "serialNumber" as keyof Equipment,
     },
     {
       header: "Acciones",
-      accessorKey: "id",
+      accessorKey: "id" as keyof Equipment,
       cell: (row: Equipment) => (
         <div className="flex items-center space-x-2">
           <Button
@@ -399,6 +399,7 @@ export default function EquipmentPage() {
                       <FormControl>
                         <Textarea 
                           {...field} 
+                          value={field.value || ""}
                           placeholder="Características adicionales del equipo"
                           rows={3}
                         />

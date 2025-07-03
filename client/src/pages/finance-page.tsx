@@ -132,7 +132,7 @@ export default function FinancePage() {
                     <div className="ml-4">
                       <h3 className="text-lg font-medium text-gray-900">Ingresos Totales</h3>
                       <div className="text-2xl font-bold text-blue-600">
-                        ${parseFloat(currentMonthData?.totalAmount || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        ${parseFloat((currentMonthData as any)?.totalAmount || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>
@@ -146,7 +146,7 @@ export default function FinancePage() {
                     <div className="ml-4">
                       <h3 className="text-lg font-medium text-gray-900">Órdenes Completadas</h3>
                       <div className="text-2xl font-bold text-green-600">
-                        {currentMonthData?.orderCount || 0}
+                        {(currentMonthData as any)?.orderCount || 0}
                       </div>
                     </div>
                   </div>
@@ -160,7 +160,7 @@ export default function FinancePage() {
                     <div className="ml-4">
                       <h3 className="text-lg font-medium text-gray-900">Valor Promedio</h3>
                       <div className="text-2xl font-bold text-amber-600">
-                        ${parseFloat(currentMonthData?.averageOrderValue || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        ${parseFloat((currentMonthData as any)?.averageOrderValue || "0").toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>

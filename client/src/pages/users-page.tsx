@@ -225,19 +225,19 @@ export default function UsersPage() {
   const columns = [
     {
       header: "Nombre",
-      accessorKey: "fullName",
+      accessorKey: "fullName" as keyof User,
     },
     {
       header: "Usuario",
-      accessorKey: "username",
+      accessorKey: "username" as keyof User,
     },
     {
       header: "Email",
-      accessorKey: "email",
+      accessorKey: "email" as keyof User,
     },
     {
       header: "Rol",
-      accessorKey: "role",
+      accessorKey: "role" as keyof User,
       cell: (row: User) => (
         <Badge variant="outline" className={getRoleColor(row.role)}>
           {getRoleName(row.role)}
@@ -246,7 +246,7 @@ export default function UsersPage() {
     },
     {
       header: "Acciones",
-      accessorKey: "id",
+      accessorKey: "id" as keyof User,
       cell: (row: User) => (
         <div className="flex items-center space-x-2">
           {currentUser?.id !== row.id && (
