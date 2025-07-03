@@ -91,17 +91,22 @@
     }
     .photos {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      flex-wrap: nowrap;
+      gap: 8px;
       margin-top: 8px;
+      max-width: 320px;
+      max-height: 100px;
+      overflow: hidden;
     }
     .photos img {
-      max-width: 180px;
-      max-height: 120px;
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
       border: 1px solid #e5e7eb;
       border-radius: 6px;
       background: #f1f5f9;
       padding: 2px;
+      flex-shrink: 0;
     }
     .signature {
       border: 1px solid #cbd5e1;
@@ -115,8 +120,9 @@
       font-size: 13px;
       color: #64748b;
       border-top: 1px solid #e5e7eb;
-      margin-top: 32px;
-      padding-top: 12px;
+      margin-top: 18px;
+      padding-top: 10px;
+      page-break-inside: avoid;
     }
     .terms {
       background: #2563eb;
@@ -193,7 +199,13 @@
       <div class="section-title">Fotografías</div>
       <div class="photos">
         {{#each photos}}
-          <img src="{{this}}" />
+          {{#if @index}}
+            {{#ifCond @index '<' 3}}
+              <img src="{{this}}" />
+            {{/ifCond}}
+          {{else}}
+            <img src="{{this}}" />
+          {{/if}}
         {{/each}}
       </div>
     </div>
