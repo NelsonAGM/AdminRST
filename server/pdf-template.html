@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Orden de Servicio {{orderNumber}}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #222; }
+    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+    .logo { height: 60px; }
+    .company-info { font-size: 14px; }
+    .section { margin-bottom: 18px; }
+    .section-title { font-weight: bold; font-size: 16px; margin-bottom: 6px; color: #2d3748; }
+    .label { font-weight: bold; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; background: #e2e8f0; color: #2d3748; margin-left: 8px; }
+    .status-completed { background: #c6f6d5; color: #22543d; }
+    .status-pending { background: #fefcbf; color: #744210; }
+    .status-other { background: #e2e8f0; color: #2d3748; }
+    .photos img { max-width: 180px; max-height: 120px; margin: 4px; border: 1px solid #eee; }
+    .signature { border: 1px solid #ccc; width: 200px; height: 60px; margin-top: 8px; }
+    .footer { font-size: 12px; color: #888; border-top: 1px solid #eee; margin-top: 30px; padding-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="company-info">
+      <div><strong>{{companyName}}</strong></div>
+      <div>{{companyAddress}}</div>
+      <div>Tel: {{companyPhone}}</div>
+      <div>Email: {{companyEmail}}</div>
+    </div>
+    {{#if companyLogo}}
+      <img src="{{companyLogo}}" class="logo" />
+    {{/if}}
+  </div>
+
+  <div class="section">
+    <span class="section-title">ORDEN DE SERVICIO</span>
+    <span class="badge status-{{statusClass}}">{{status}}</span>
+    <div><span class="label">Folio:</span> {{orderNumber}}</div>
+    <div><span class="label">Fecha de Solicitud:</span> {{requestDate}}</div>
+    <div><span class="label">Fecha Estimada de Entrega:</span> {{expectedDeliveryDate}}</div>
+  </div>
+
+  <div class="section">
+    <span class="section-title">Datos del Cliente</span>
+    <div><span class="label">Nombre:</span> {{clientName}}</div>
+    <div><span class="label">Contacto:</span> {{clientContact}}</div>
+    <div><span class="label">Teléfono:</span> {{clientPhone}}</div>
+    <div><span class="label">Email:</span> {{clientEmail}}</div>
+    <div><span class="label">Dirección:</span> {{clientAddress}}</div>
+  </div>
+
+  <div class="section">
+    <span class="section-title">Datos del Equipo</span>
+    <div><span class="label">Tipo:</span> {{equipmentType}}</div>
+    <div><span class="label">Marca:</span> {{equipmentBrand}}</div>
+    <div><span class="label">Modelo:</span> {{equipmentModel}}</div>
+    <div><span class="label">S/N:</span> {{equipmentSerial}}</div>
+  </div>
+
+  <div class="section">
+    <span class="section-title">Servicio</span>
+    <div><span class="label">Técnico:</span> {{technician}}</div>
+    <div><span class="label">Descripción:</span> {{description}}</div>
+    <div><span class="label">Notas:</span> {{notes}}</div>
+    <div><span class="label">Materiales Utilizados:</span> {{materialsUsed}}</div>
+    <div><span class="label">Costo del Servicio:</span> {{cost}}</div>
+  </div>
+
+  <div class="section photos">
+    <span class="section-title">Fotografías</span>
+    {{#each photos}}
+      <img src="{{this}}" />
+    {{/each}}
+  </div>
+
+  <div class="section">
+    <span class="section-title">Firma del Cliente</span>
+    {{#if clientSignature}}
+      <img src="{{clientSignature}}" class="signature" />
+    {{else}}
+      <div class="signature"></div>
+    {{/if}}
+  </div>
+
+  <div class="footer">
+    <strong>TÉRMINOS Y CONDICIONES</strong><br />
+    1. La presente cotización tiene una vigencia de 7 días naturales.<br />
+    2. Para importes mayores a $5,000.00 (cinco mil pesos MN), se requiere el 50% de anticipo.<br />
+    3. El pago se debe de realizar en una sola exhibición.<br />
+    CLABE Interbancaria: 0021375010152881
+  </div>
+</body>
+</html> 

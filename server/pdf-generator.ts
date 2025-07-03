@@ -3,6 +3,7 @@ import { ServiceOrder, Client, Equipment, Technician, CompanySettings } from '@s
 import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
+import puppeteer from 'puppeteer';
 
 // Función para generar PDF de orden de servicio
 export async function generateServiceOrderPDF(
@@ -410,4 +411,43 @@ export async function generateMultipleServiceOrdersPDF(
       reject(error);
     }
   });
+}
+
+// Función para rellenar la plantilla HTML con los datos de la orden
+function fillOrderHtmlTemplate(orderData: Record<string, any>): string {
+  let template = fs.readFileSync(path.join(__dirname, 'pdf-template.html'), 'utf8');
+  // Reemplazo simple de {{campo}} por el valor correspondiente
+  Object.entries(orderData).forEach(([key, value]) => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    template = template.replace(regex, value ?? '');
+  });
+  // Manejo simple para arrays (fotos)
+  if (Array.isArray(orderData.photos)) {
+    const photosHtml = orderData.photos.map((url: string) => `<img src="${url}" />`).join('');
+    template = template.replace(/{{#each photos}}([\s\S]*?){{\/each}}/, photosHtml);
+  }
+  // Firma
+  if (orderData.clientSignature) {
+    template = template.replace(/{{#if clientSignature}}([\s\S]*?){{else}}([\s\S]*?){{\/if}}/, `<img src="${orderData.clientSignature}" class="signature" />`);
+  } else {
+    template = template.replace(/{{#if clientSignature}}([\s\S]*?){{else}}([\s\S]*?){{\/if}}/, '<div class="signature"></div>');
+  }
+  // Logo
+  if (orderData.companyLogo) {
+    template = template.replace(/{{#if companyLogo}}([\s\S]*?){{\/if}}/, `<img src="${orderData.companyLogo}" class="logo" />`);
+  } else {
+    template = template.replace(/{{#if companyLogo}}([\s\S]*?){{\/if}}/, '');
+  }
+  return template;
+}
+
+// Función para generar PDF de una orden usando Puppeteer
+export async function generateOrderHtmlPDF(orderData: Record<string, any>): Promise<Buffer> {
+  const html = fillOrderHtmlTemplate(orderData);
+  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+  const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  await browser.close();
+  return pdfBuffer;
 }
