@@ -11,7 +11,8 @@
     "check": "tsc",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "postinstall": "puppeteer install"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
