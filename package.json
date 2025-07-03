@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "npm install vite && npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "postbuild": "copy server\\pdf-template.html dist\\pdf-template.html",
+    "postbuild": "cp server/pdf-template.html dist/pdf-template.html",
     "start": "node dist/index.js",
     "check": "tsc",
     "db:generate": "drizzle-kit generate",
