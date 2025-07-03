@@ -4,91 +4,216 @@
   <meta charset="UTF-8">
   <title>Orden de Servicio {{orderNumber}}</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; color: #222; }
-    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-    .logo { height: 60px; }
-    .company-info { font-size: 14px; }
-    .section { margin-bottom: 18px; }
-    .section-title { font-weight: bold; font-size: 16px; margin-bottom: 6px; color: #2d3748; }
-    .label { font-weight: bold; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; background: #e2e8f0; color: #2d3748; margin-left: 8px; }
-    .status-completed { background: #c6f6d5; color: #22543d; }
-    .status-pending { background: #fefcbf; color: #744210; }
-    .status-other { background: #e2e8f0; color: #2d3748; }
-    .photos img { max-width: 180px; max-height: 120px; margin: 4px; border: 1px solid #eee; }
-    .signature { border: 1px solid #ccc; width: 200px; height: 60px; margin-top: 8px; }
-    .footer { font-size: 12px; color: #888; border-top: 1px solid #eee; margin-top: 30px; padding-top: 10px; }
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 32px 0 32px 0;
+      background: #f8fafc;
+      color: #222;
+    }
+    .container {
+      background: #fff;
+      max-width: 800px;
+      margin: 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+      padding: 32px 40px 40px 40px;
+    }
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .logo {
+      height: 64px;
+      margin-left: 16px;
+    }
+    .company-info {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .order-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    .order-number {
+      font-size: 16px;
+      color: #2563eb;
+      font-weight: 700;
+    }
+    .section {
+      margin-bottom: 22px;
+    }
+    .section-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #2563eb;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 2px;
+      letter-spacing: 0.5px;
+    }
+    .label {
+      font-weight: 500;
+      color: #475569;
+      min-width: 120px;
+      display: inline-block;
+    }
+    .value {
+      color: #222;
+      font-weight: 400;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-left: 8px;
+    }
+    .status-completed { background: #bbf7d0; color: #166534; }
+    .status-pending { background: #fef08a; color: #a16207; }
+    .status-other { background: #e0e7ef; color: #334155; }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .info-table td {
+      padding: 4px 0;
+      vertical-align: top;
+    }
+    .photos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .photos img {
+      max-width: 180px;
+      max-height: 120px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #f1f5f9;
+      padding: 2px;
+    }
+    .signature {
+      border: 1px solid #cbd5e1;
+      width: 220px;
+      height: 60px;
+      margin-top: 8px;
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+    .footer {
+      font-size: 13px;
+      color: #64748b;
+      border-top: 1px solid #e5e7eb;
+      margin-top: 32px;
+      padding-top: 12px;
+    }
+    .terms {
+      background: #2563eb;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="company-info">
-      <div><strong>{{companyName}}</strong></div>
-      <div>{{companyAddress}}</div>
-      <div>Tel: {{companyPhone}}</div>
-      <div>Email: {{companyEmail}}</div>
+  <div class="container">
+    <div class="header">
+      <div class="company-info">
+        <div class="order-title">{{companyName}}</div>
+        <div>{{companyAddress}}</div>
+        <div>Tel: {{companyPhone}}</div>
+        <div>Email: {{companyEmail}}</div>
+      </div>
+      {{#if companyLogo}}
+        <img src="{{companyLogo}}" class="logo" />
+      {{/if}}
     </div>
-    {{#if companyLogo}}
-      <img src="{{companyLogo}}" class="logo" />
-    {{/if}}
-  </div>
 
-  <div class="section">
-    <span class="section-title">ORDEN DE SERVICIO</span>
-    <span class="badge status-{{statusClass}}">{{status}}</span>
-    <div><span class="label">Folio:</span> {{orderNumber}}</div>
-    <div><span class="label">Fecha de Solicitud:</span> {{requestDate}}</div>
-    <div><span class="label">Fecha Estimada de Entrega:</span> {{expectedDeliveryDate}}</div>
-  </div>
+    <div class="section">
+      <span class="order-number">ORDEN DE SERVICIO #{{orderNumber}}</span>
+      <span class="badge status-{{statusClass}}">{{status}}</span>
+      <table class="info-table">
+        <tr>
+          <td class="label">Fecha de Solicitud:</td>
+          <td class="value">{{requestDate}}</td>
+          <td class="label">Fecha Estimada de Entrega:</td>
+          <td class="value">{{expectedDeliveryDate}}</td>
+        </tr>
+      </table>
+    </div>
 
-  <div class="section">
-    <span class="section-title">Datos del Cliente</span>
-    <div><span class="label">Nombre:</span> {{clientName}}</div>
-    <div><span class="label">Contacto:</span> {{clientContact}}</div>
-    <div><span class="label">Teléfono:</span> {{clientPhone}}</div>
-    <div><span class="label">Email:</span> {{clientEmail}}</div>
-    <div><span class="label">Dirección:</span> {{clientAddress}}</div>
-  </div>
+    <div class="section">
+      <div class="section-title">Datos del Cliente</div>
+      <table class="info-table">
+        <tr><td class="label">Nombre:</td><td class="value">{{clientName}}</td></tr>
+        <tr><td class="label">Contacto:</td><td class="value">{{clientContact}}</td></tr>
+        <tr><td class="label">Teléfono:</td><td class="value">{{clientPhone}}</td></tr>
+        <tr><td class="label">Email:</td><td class="value">{{clientEmail}}</td></tr>
+        <tr><td class="label">Dirección:</td><td class="value">{{clientAddress}}</td></tr>
+      </table>
+    </div>
 
-  <div class="section">
-    <span class="section-title">Datos del Equipo</span>
-    <div><span class="label">Tipo:</span> {{equipmentType}}</div>
-    <div><span class="label">Marca:</span> {{equipmentBrand}}</div>
-    <div><span class="label">Modelo:</span> {{equipmentModel}}</div>
-    <div><span class="label">S/N:</span> {{equipmentSerial}}</div>
-  </div>
+    <div class="section">
+      <div class="section-title">Datos del Equipo</div>
+      <table class="info-table">
+        <tr><td class="label">Tipo:</td><td class="value">{{equipmentType}}</td></tr>
+        <tr><td class="label">Marca:</td><td class="value">{{equipmentBrand}}</td></tr>
+        <tr><td class="label">Modelo:</td><td class="value">{{equipmentModel}}</td></tr>
+        <tr><td class="label">S/N:</td><td class="value">{{equipmentSerial}}</td></tr>
+      </table>
+    </div>
 
-  <div class="section">
-    <span class="section-title">Servicio</span>
-    <div><span class="label">Técnico:</span> {{technician}}</div>
-    <div><span class="label">Descripción:</span> {{description}}</div>
-    <div><span class="label">Notas:</span> {{notes}}</div>
-    <div><span class="label">Materiales Utilizados:</span> {{materialsUsed}}</div>
-    <div><span class="label">Costo del Servicio:</span> {{cost}}</div>
-  </div>
+    <div class="section">
+      <div class="section-title">Servicio</div>
+      <table class="info-table">
+        <tr><td class="label">Técnico:</td><td class="value">{{technician}}</td></tr>
+        <tr><td class="label">Descripción:</td><td class="value">{{description}}</td></tr>
+        <tr><td class="label">Notas:</td><td class="value">{{notes}}</td></tr>
+        <tr><td class="label">Materiales Utilizados:</td><td class="value">{{materialsUsed}}</td></tr>
+        <tr><td class="label">Costo del Servicio:</td><td class="value">{{cost}}</td></tr>
+      </table>
+    </div>
 
-  <div class="section photos">
-    <span class="section-title">Fotografías</span>
-    {{#each photos}}
-      <img src="{{this}}" />
-    {{/each}}
-  </div>
+    <div class="section">
+      <div class="section-title">Fotografías</div>
+      <div class="photos">
+        {{#each photos}}
+          <img src="{{this}}" />
+        {{/each}}
+      </div>
+    </div>
 
-  <div class="section">
-    <span class="section-title">Firma del Cliente</span>
-    {{#if clientSignature}}
-      <img src="{{clientSignature}}" class="signature" />
-    {{else}}
-      <div class="signature"></div>
-    {{/if}}
-  </div>
+    <div class="section">
+      <div class="section-title">Firma del Cliente</div>
+      {{#if clientSignature}}
+        <img src="{{clientSignature}}" class="signature" />
+      {{else}}
+        <div class="signature"></div>
+      {{/if}}
+    </div>
 
-  <div class="footer">
-    <strong>TÉRMINOS Y CONDICIONES</strong><br />
-    1. La presente cotización tiene una vigencia de 7 días naturales.<br />
-    2. Para importes mayores a $5,000.00 (cinco mil pesos MN), se requiere el 50% de anticipo.<br />
-    3. El pago se debe de realizar en una sola exhibición.<br />
-    CLABE Interbancaria: 0021375010152881
+    <div class="footer">
+      <div class="terms">TÉRMINOS Y CONDICIONES</div><br />
+      1. La presente cotización tiene una vigencia de 7 días naturales.<br />
+      2. Para importes mayores a $5,000.00 (cinco mil pesos MN), se requiere el 50% de anticipo.<br />
+      3. El pago se debe de realizar en una sola exhibición.<br />
+      CLABE Interbancaria: 0021375010152881
+    </div>
   </div>
 </body>
 </html> 
