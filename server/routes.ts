@@ -8,7 +8,7 @@ import {
   insertUserSchema
 } from "@shared/schema";
 import { sendEmail, generateNewOrderEmail, loadEmailConfigFromDatabase } from "./email";
-import { generateServiceOrderPDF, generateMultipleServiceOrdersPDF, generateOrderHtmlPDF } from "./pdf-generator";
+import { generateServiceOrderPDF, generateMultipleServiceOrdersPDF, generateOrderHtmlPDF, generateBulkOrdersHtmlPDF } from "./pdf-generator";
 import archiver from "archiver";
 import stream from "stream";
 
@@ -818,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint para descargar varias órdenes de servicio en un solo ZIP de PDFs (Puppeteer)
+  // Endpoint para descargar varias órdenes de servicio en un solo PDF (Puppeteer)
   app.post("/api/service-orders/bulk-pdf", ensureAuthenticated, async (req, res) => {
     try {
       const { ids } = req.body;
@@ -827,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Obtener datos completos de cada orden
       const companySettings = await storage.getCompanySettings();
-      const pdfBuffers: { filename: string, buffer: Buffer }[] = [];
+      const ordersData: Record<string, any>[] = [];
       for (const id of ids) {
         const serviceOrder = await storage.getServiceOrder(id);
         if (!serviceOrder) continue;
@@ -876,22 +876,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           photos: serviceOrder.photos || [],
           clientSignature: serviceOrder.clientSignature || ''
         };
-        const pdfBuffer = await generateOrderHtmlPDF(orderData);
-        pdfBuffers.push({ filename: `Orden_${serviceOrder.orderNumber}.pdf`, buffer: pdfBuffer });
+        ordersData.push(orderData);
       }
-      if (pdfBuffers.length === 0) {
+      if (ordersData.length === 0) {
         return res.status(404).json({ message: "No se encontraron órdenes válidas." });
       }
-      // Crear un ZIP con todos los PDFs
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', 'attachment; filename="ordenes_servicio.zip"');
-      const archive = archiver('zip', { zlib: { level: 9 } });
-      archive.on('error', err => res.status(500).send({ message: err.message }));
-      archive.pipe(res);
-      for (const pdf of pdfBuffers) {
-        archive.append(pdf.buffer, { name: pdf.filename });
-      }
-      await archive.finalize();
+      // Generar un solo PDF con todas las órdenes
+      const pdfBuffer = await generateBulkOrdersHtmlPDF(ordersData);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="ordenes_servicio.pdf"');
+      res.end(pdfBuffer);
     } catch (error) {
       console.error("Error al generar PDFs por lote:", error);
       res.status(500).json({ message: "Error al generar los PDFs por lote." });

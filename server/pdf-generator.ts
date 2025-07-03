@@ -456,3 +456,27 @@ export async function generateOrderHtmlPDF(orderData: Record<string, any>): Prom
   await browser.close();
   return pdfBuffer;
 }
+
+// Generar un solo PDF con varias órdenes usando Puppeteer y la plantilla HTML
+export async function generateBulkOrdersHtmlPDF(ordersData: Record<string, any>[]): Promise<Buffer> {
+  // Concatenar los HTMLs de cada orden, separando con salto de página
+  const htmls = ordersData.map(fillOrderHtmlTemplate);
+  const fullHtml = `
+    <html>
+      <head>
+        <style>
+          .page-break { page-break-after: always; }
+        </style>
+      </head>
+      <body>
+        ${htmls.map((h, i) => `<div>${h}</div>${i < htmls.length - 1 ? '<div class=\"page-break\"></div>' : ''}`).join('')}
+      </body>
+    </html>
+  `;
+  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+  const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  await browser.close();
+  return pdfBuffer;
+}
