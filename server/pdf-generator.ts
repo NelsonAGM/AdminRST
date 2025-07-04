@@ -421,6 +421,8 @@ export async function generateMultipleServiceOrdersPDF(
 // Función para rellenar la plantilla HTML con los datos de la orden
 function fillOrderHtmlTemplate(orderData: Record<string, any>): string {
   let template = fs.readFileSync(path.join(__dirname, 'pdf-template.html'), 'utf8');
+  // URL base del backend para imágenes
+  const BASE_URL = process.env.BASE_URL || 'https://adminrst.onrender.com';
   // Reemplazo simple de {{campo}} por el valor correspondiente
   Object.entries(orderData).forEach(([key, value]) => {
     const regex = new RegExp(`{{${key}}}`, 'g');
@@ -428,7 +430,11 @@ function fillOrderHtmlTemplate(orderData: Record<string, any>): string {
   });
   // Manejo simple para arrays (fotos)
   if (Array.isArray(orderData.photos)) {
-    const photosHtml = orderData.photos.map((url: string) => `<img src="${url}" />`).join('');
+    const photosHtml = orderData.photos.map((url: string) => {
+      // Si la URL es relativa, la convierto en absoluta
+      const absoluteUrl = url.startsWith('/uploads/') ? `${BASE_URL}${url}` : url;
+      return `<img src="${absoluteUrl}" />`;
+    }).join('');
     template = template.replace(/{{#each photos}}([\s\S]*?){{\/each}}/, photosHtml);
   }
   // Firma
@@ -439,7 +445,8 @@ function fillOrderHtmlTemplate(orderData: Record<string, any>): string {
   }
   // Logo
   if (orderData.companyLogo) {
-    template = template.replace(/{{#if companyLogo}}([\s\S]*?){{\/if}}/, `<img src="${orderData.companyLogo}" class="logo" />`);
+    const logoUrl = orderData.companyLogo.startsWith('/uploads/') ? `${BASE_URL}${orderData.companyLogo}` : orderData.companyLogo;
+    template = template.replace(/{{#if companyLogo}}([\s\S]*?){{\/if}}/, `<img src="${logoUrl}" class="logo" />`);
   } else {
     template = template.replace(/{{#if companyLogo}}([\s\S]*?){{\/if}}/, '');
   }
