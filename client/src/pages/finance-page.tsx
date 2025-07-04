@@ -50,6 +50,11 @@ export default function FinancePage() {
   // Obtener el historial de ingresos de todo el año
   const { data: yearlyData, isLoading: isLoadingYearly } = useQuery<MonthlyRevenue[]>({
     queryKey: ["/api/monthly-revenue/year", selectedYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/monthly-revenue/${selectedYear}`);
+      if (!res.ok) throw new Error("Error al obtener ingresos mensuales");
+      return res.json();
+    },
   });
   
   // Obtener el historial de ingresos (últimos 12 meses)
