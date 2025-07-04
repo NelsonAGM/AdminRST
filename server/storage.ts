@@ -590,10 +590,15 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getRevenueHistory(limit: number): Promise<MonthlyRevenue[]> {
-    return await db.select()
-      .from(monthlyRevenue)
-      .orderBy(sql`${monthlyRevenue.year} DESC, ${monthlyRevenue.month} DESC`)
-      .limit(limit);
+    try {
+      return await db.select()
+        .from(monthlyRevenue)
+        .orderBy(sql`${monthlyRevenue.year} DESC, ${monthlyRevenue.month} DESC`)
+        .limit(limit);
+    } catch (error) {
+      console.error('Error en getRevenueHistory:', error);
+      return [];
+    }
   }
 }
 
