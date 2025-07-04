@@ -15,6 +15,7 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import cloudinary from 'cloudinary';
 
 // Middleware to check if user is authenticated
 const ensureAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -394,25 +395,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (orderData.photos && Array.isArray(orderData.photos)) {
         orderData.photos = orderData.photos.map((p: any) => String(p));
         // --- OPTIMIZACIÓN DE IMÁGENES ---
-        const uploadDir = path.join(process.cwd(), 'uploads');
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
         const optimizedPhotos = [];
         for (const base64img of orderData.photos) {
           if (base64img.startsWith('data:image')) {
             const matches = base64img.match(/^data:image\/(jpeg|png|jpg);base64,(.+)$/);
             if (!matches) continue;
             const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-            const buffer = Buffer.from(matches[2], 'base64');
-            const filename = `photo_${Date.now()}_${crypto.randomBytes(6).toString('hex')}.${ext}`;
-            const filepath = path.join(uploadDir, filename);
-            // Procesar con sharp
-            await sharp(buffer)
-              .resize(1024, 1024, { fit: 'inside' })
-              .jpeg({ quality: 70 })
-              .toFile(filepath);
-            // Guardar la URL pública
-            optimizedPhotos.push(`/uploads/${filename}`);
-          } else if (base64img.startsWith('/uploads/')) {
+            // Subir a Cloudinary
+            try {
+              const uploadResult = await cloudinary.v2.uploader.upload(
+                `data:image/${ext};base64,${matches[2]}`,
+                {
+                  folder: 'servicedashboard',
+                  resource_type: 'image',
+                  overwrite: true,
+                  transformation: [
+                    { width: 1024, height: 1024, crop: 'limit', quality: 'auto:good' }
+                  ]
+                }
+              );
+              optimizedPhotos.push(uploadResult.secure_url);
+            } catch (err) {
+              console.error('Error subiendo imagen a Cloudinary:', err);
+            }
+          } else if (base64img.startsWith('http')) {
             // Ya es una URL pública
             optimizedPhotos.push(base64img);
           }
