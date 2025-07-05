@@ -10,6 +10,52 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Configuración de PDFShift
+const PDFSHIFT_API_KEY = process.env.PDFSHIFT_API_KEY;
+const PDFSHIFT_API_URL = 'https://api.pdfshift.io/v3/convert/pdf';
+
+// Función para generar PDF usando PDFShift (más rápido)
+async function generatePDFWithPDFShift(html: string): Promise<Buffer> {
+  if (!PDFSHIFT_API_KEY) {
+    throw new Error('PDFSHIFT_API_KEY no configurada');
+  }
+
+  try {
+    console.log('🔄 Generando PDF con PDFShift...');
+    const startTime = Date.now();
+
+    const response = await fetch(PDFSHIFT_API_URL, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': PDFSHIFT_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        source: html,
+        format: 'A4',
+        margin: '20mm',
+        wait_for: 1000 // Esperar 1 segundo para que se carguen las imágenes
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`PDFShift error: ${response.status} - ${error}`);
+    }
+
+    const pdfBuffer = Buffer.from(await response.arrayBuffer());
+    const processingTime = Date.now() - startTime;
+    
+    console.log(`✅ PDF generado con PDFShift en ${processingTime}ms`);
+    console.log(`   - Tamaño: ${pdfBuffer.length} bytes`);
+    
+    return pdfBuffer;
+  } catch (error) {
+    console.error('❌ Error con PDFShift:', error);
+    throw error;
+  }
+}
+
 // Función para generar PDF de orden de servicio
 export async function generateServiceOrderPDF(
   serviceOrder: ServiceOrder,
@@ -453,14 +499,29 @@ function fillOrderHtmlTemplate(orderData: Record<string, any>): string {
   return template;
 }
 
-// Función para generar PDF de una orden usando Puppeteer
+// Función para generar PDF de una orden usando PDFShift (más rápido) con fallback a Puppeteer
 export async function generateOrderHtmlPDF(orderData: Record<string, any>): Promise<Buffer> {
   const html = fillOrderHtmlTemplate(orderData);
+
+  // Intentar usar PDFShift primero (más rápido)
+  if (PDFSHIFT_API_KEY) {
+    try {
+      const pdfBuffer = await generatePDFWithPDFShift(html);
+      return pdfBuffer;
+    } catch (pdfshiftError) {
+      console.log('⚠️ PDFShift falló, usando Puppeteer como fallback...');
+      console.error('Error PDFShift:', pdfshiftError);
+    }
+  }
+
+  // Fallback a Puppeteer (sistema actual)
+  console.log('🔄 Usando Puppeteer para generar PDF...');
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: 'networkidle0' });
   let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
   await browser.close();
+  
   // Asegurar que sea Buffer de Node.js
   if (!(pdfBuffer instanceof Buffer)) {
     pdfBuffer = Buffer.from(pdfBuffer as Uint8Array);
@@ -468,7 +529,7 @@ export async function generateOrderHtmlPDF(orderData: Record<string, any>): Prom
   return pdfBuffer as Buffer;
 }
 
-// Generar un solo PDF con varias órdenes usando Puppeteer y la plantilla HTML
+// Generar un solo PDF con varias órdenes usando PDFShift (más rápido) con fallback a Puppeteer
 export async function generateBulkOrdersHtmlPDF(ordersData: Record<string, any>[]): Promise<Buffer> {
   const start = Date.now();
   const htmls = ordersData.map(fillOrderHtmlTemplate);
@@ -485,13 +546,29 @@ export async function generateBulkOrdersHtmlPDF(ordersData: Record<string, any>[
     </html>
   `;
   console.log('Tiempo para generar HTML:', Date.now() - start, 'ms');
+
+  // Intentar usar PDFShift primero (más rápido)
+  if (PDFSHIFT_API_KEY) {
+    try {
+      const pdfBuffer = await generatePDFWithPDFShift(fullHtml);
+      console.log('Tiempo total para generar PDF con PDFShift:', Date.now() - start, 'ms');
+      return pdfBuffer;
+    } catch (pdfshiftError) {
+      console.log('⚠️ PDFShift falló, usando Puppeteer como fallback...');
+      console.error('Error PDFShift:', pdfshiftError);
+    }
+  }
+
+  // Fallback a Puppeteer (sistema actual)
+  console.log('🔄 Usando Puppeteer para generar PDF...');
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
   console.log('Tiempo para cargar contenido en Puppeteer:', Date.now() - start, 'ms');
   let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
   await browser.close();
-  console.log('Tiempo total para generar PDF:', Date.now() - start, 'ms');
+  console.log('Tiempo total para generar PDF con Puppeteer:', Date.now() - start, 'ms');
+  
   // Asegurar que sea Buffer de Node.js
   if (!(pdfBuffer instanceof Buffer)) {
     pdfBuffer = Buffer.from(pdfBuffer as Uint8Array);

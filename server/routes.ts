@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import cloudinary from 'cloudinary';
+import fetch from 'node-fetch';
 
 // Middleware to check if user is authenticated
 const ensureAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -859,25 +860,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint para descargar varias órdenes de servicio en un solo PDF (Puppeteer)
+  // Endpoint para descargar varias órdenes de servicio en un solo PDF
   app.post("/api/service-orders/bulk-pdf", ensureAuthenticated, async (req, res) => {
     try {
       const { ids } = req.body;
       if (!Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ message: "Debes enviar un array de IDs de órdenes." });
       }
+
       // Obtener datos completos de cada orden
       const companySettings = await storage.getCompanySettings();
       const ordersData: Record<string, any>[] = [];
+      
       for (const id of ids) {
         const serviceOrder = await storage.getServiceOrder(id);
         if (!serviceOrder) continue;
+        
         const client = await storage.getClient(serviceOrder.clientId);
         const equipment = await storage.getEquipment(serviceOrder.equipmentId);
         let technician = null;
+        
         if (serviceOrder.technicianId) {
           technician = await storage.getTechnician(serviceOrder.technicianId);
         }
+        
         if (!technician) {
           technician = {
             id: 0,
@@ -887,8 +893,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdAt: new Date()
           };
         }
+        
         if (!client || !equipment) continue;
-        // Preparar los datos para la plantilla
+        
         const orderData = {
           companyName: companySettings?.name || '',
           companyAddress: companySettings?.address || '',
@@ -897,7 +904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companyLogo: companySettings?.logoUrl || '',
           orderNumber: serviceOrder.orderNumber,
           status: serviceOrder.status,
-          statusClass: serviceOrder.status === 'completed' ? 'completed' : (serviceOrder.status === 'pending' ? 'pending' : 'other'),
+          statusClass: serviceOrder.status === 'completed' ? 'completed' : 
+                      serviceOrder.status === 'pending' ? 'pending' : 'other',
           requestDate: serviceOrder.requestDate ? new Date(serviceOrder.requestDate).toLocaleDateString() : '',
           expectedDeliveryDate: serviceOrder.expectedDeliveryDate ? new Date(serviceOrder.expectedDeliveryDate).toLocaleDateString() : '',
           clientName: client.name,
@@ -913,20 +921,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: serviceOrder.description || '',
           notes: serviceOrder.notes || '',
           materialsUsed: serviceOrder.materialsUsed || '',
-          cost: serviceOrder.cost ? `$${serviceOrder.cost}` : 'N/A',
+          cost: serviceOrder.cost ? `$${serviceOrder.cost}` : '',
           photos: serviceOrder.photos || [],
           clientSignature: serviceOrder.clientSignature || ''
         };
+        
         ordersData.push(orderData);
       }
+
       if (ordersData.length === 0) {
         return res.status(404).json({ message: "No se encontraron órdenes válidas." });
       }
-      // Generar un solo PDF con todas las órdenes
+
+      // Generar PDF usando el sistema actual
       const pdfBuffer = await generateBulkOrdersHtmlPDF(ordersData);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="ordenes_servicio.pdf"');
       res.end(pdfBuffer);
+      
     } catch (error) {
       console.error("Error al generar PDFs por lote:", error);
       res.status(500).json({ message: "Error al generar los PDFs por lote." });
