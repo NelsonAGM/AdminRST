@@ -100,6 +100,7 @@ export default function OrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+  const [descargandoPDF, setDescargandoPDF] = useState(false);
   
   // Form for adding/editing service orders
   const form = useForm<ExtendedServiceOrder>({
@@ -573,6 +574,7 @@ export default function OrdersPage() {
   // Botón para descargar seleccionadas (ahora sí llama al backend)
   const handleDownloadSelected = async () => {
     if (selectedOrderIds.length === 0) return;
+    setDescargandoPDF(true);
     try {
       const response = await fetch("/api/service-orders/bulk-pdf", {
         method: "POST",
@@ -588,6 +590,7 @@ export default function OrdersPage() {
           description: "No se pudo generar el PDF. Intenta de nuevo.",
           variant: "destructive"
         });
+        setDescargandoPDF(false);
         return;
       }
       const blob = await response.blob();
@@ -605,6 +608,8 @@ export default function OrdersPage() {
         description: "Ocurrió un error al descargar el PDF.",
         variant: "destructive"
       });
+    } finally {
+      setDescargandoPDF(false);
     }
   };
 
@@ -650,6 +655,35 @@ export default function OrdersPage() {
           >
             <Download className="mr-2 h-4 w-4" /> Descargar seleccionadas en PDF
           </Button>
+          {descargandoPDF && (
+            <div style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(255,255,255,0.7)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999
+            }}>
+              <div style={{
+                border: '6px solid #e5e7eb',
+                borderTop: '6px solid #2563eb',
+                borderRadius: '50%',
+                width: 48,
+                height: 48,
+                animation: 'spin 1s linear infinite',
+                marginBottom: 12
+              }} />
+              <span style={{ fontSize: 18, color: '#2563eb', fontWeight: 600 }}>Descargando PDF...</span>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          )}
           <Button onClick={handleAddOrder}>
             <Plus className="mr-2 h-4 w-4" /> Nueva Orden
           </Button>
