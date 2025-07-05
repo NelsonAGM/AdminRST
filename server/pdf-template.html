@@ -107,10 +107,27 @@
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 4px;
+      table-layout: fixed;
     }
     .info-table td {
-      padding: 2px 0;
+      padding: 4px 8px;
       vertical-align: top;
+      font-size: 12px;
+    }
+    .info-table .label {
+      font-weight: 600;
+      color: #2563eb;
+      width: 120px;
+      min-width: 100px;
+      text-align: left;
+      background: #f3f6fa;
+      border-radius: 3px;
+    }
+    .info-table .value {
+      color: #222;
+      font-weight: 400;
+      text-align: left;
+      word-break: break-word;
     }
     .photos {
       display: flex;
