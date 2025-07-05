@@ -432,7 +432,7 @@ function fillOrderHtmlTemplate(orderData: Record<string, any>): string {
   if (Array.isArray(orderData.photos)) {
     const photosHtml = orderData.photos.map((url: string) => {
       // Si la URL es relativa, la convierto en absoluta
-      const absoluteUrl = url.startsWith('/uploads/') ? `${BASE_URL}${url}` : url;
+      const absoluteUrl = url.startsWith('/uploads/') ? `${BASE_URL}${url}` : optimizeCloudinaryUrl(url);
       return `<img src="${absoluteUrl}" />`;
     }).join('');
     template = template.replace(/{{#each photos}}([\s\S]*?){{\/each}}/, photosHtml);
@@ -459,14 +459,18 @@ export async function generateOrderHtmlPDF(orderData: Record<string, any>): Prom
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: 'networkidle0' });
-  const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
   await browser.close();
-  return pdfBuffer;
+  // Asegurar que sea Buffer de Node.js
+  if (!(pdfBuffer instanceof Buffer)) {
+    pdfBuffer = Buffer.from(pdfBuffer as Uint8Array);
+  }
+  return pdfBuffer as Buffer;
 }
 
 // Generar un solo PDF con varias órdenes usando Puppeteer y la plantilla HTML
 export async function generateBulkOrdersHtmlPDF(ordersData: Record<string, any>[]): Promise<Buffer> {
-  // Concatenar los HTMLs de cada orden, separando con salto de página
+  const start = Date.now();
   const htmls = ordersData.map(fillOrderHtmlTemplate);
   const fullHtml = `
     <html>
@@ -480,10 +484,25 @@ export async function generateBulkOrdersHtmlPDF(ordersData: Record<string, any>[
       </body>
     </html>
   `;
+  console.log('Tiempo para generar HTML:', Date.now() - start, 'ms');
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
-  const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  console.log('Tiempo para cargar contenido en Puppeteer:', Date.now() - start, 'ms');
+  let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
   await browser.close();
-  return pdfBuffer;
+  console.log('Tiempo total para generar PDF:', Date.now() - start, 'ms');
+  // Asegurar que sea Buffer de Node.js
+  if (!(pdfBuffer instanceof Buffer)) {
+    pdfBuffer = Buffer.from(pdfBuffer as Uint8Array);
+  }
+  return pdfBuffer as Buffer;
+}
+
+function optimizeCloudinaryUrl(url: string): string {
+  // Si la URL es de Cloudinary, inserta transformación para w_600,q_60
+  if (url.includes('res.cloudinary.com')) {
+    return url.replace('/upload/', '/upload/w_600,q_60/');
+  }
+  return url;
 }
