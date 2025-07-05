@@ -33,7 +33,7 @@ async function generatePDFWithPDFShift(html: string): Promise<Buffer> {
       body: JSON.stringify({
         source: html,
         format: 'A4',
-        margin: '20mm'
+        margin: '10mm'
       })
     });
 
@@ -518,7 +518,7 @@ export async function generateOrderHtmlPDF(orderData: Record<string, any>): Prom
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: 'networkidle0' });
-  let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } });
   await browser.close();
   
   // Asegurar que sea Buffer de Node.js
@@ -564,7 +564,7 @@ export async function generateBulkOrdersHtmlPDF(ordersData: Record<string, any>[
   const page = await browser.newPage();
   await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
   console.log('Tiempo para cargar contenido en Puppeteer:', Date.now() - start, 'ms');
-  let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  let pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } });
   await browser.close();
   console.log('Tiempo total para generar PDF con Puppeteer:', Date.now() - start, 'ms');
   
