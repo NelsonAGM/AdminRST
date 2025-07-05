@@ -33,8 +33,7 @@ async function generatePDFWithPDFShift(html: string): Promise<Buffer> {
       body: JSON.stringify({
         source: html,
         format: 'A4',
-        margin: '20mm',
-        wait_for: 1000 // Esperar 1 segundo para que se carguen las imágenes
+        margin: '20mm'
       })
     });
 
