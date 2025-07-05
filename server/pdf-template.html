@@ -113,14 +113,15 @@
     }
     .photos {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 6px;
       margin-top: 4px;
       background: #fff;
+      justify-content: center;
     }
     .photos img {
-      width: 300px;
-      height: 300px;
+      max-width: 45%;
+      height: auto;
       object-fit: contain;
       border: 1px solid #e5e7eb;
       border-radius: 4px;
