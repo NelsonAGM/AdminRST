@@ -1121,6 +1121,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json([]);
     console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
   });
+
+  // Endpoint de prueba sin autenticación
+  app.get("/api/test-history", async (req, res) => {
+    console.log('🧪 === INICIO ENDPOINT DE PRUEBA /api/test-history ===');
+    res.json({ message: "Endpoint de prueba funcionando" });
+    console.log('🧪 === FIN ENDPOINT DE PRUEBA /api/test-history ===');
+  });
   
   // Create HTTP server
   const server = createServer(app);
