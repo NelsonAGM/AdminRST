@@ -1113,6 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
+    console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
     try {
       console.log('📊 Endpoint /api/monthly-revenue/history iniciado');
       const limit = 12; // Default to last 12 months
@@ -1120,6 +1121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const history = await storage.getRevenueHistory(limit);
       console.log('📊 Historial obtenido exitosamente, enviando respuesta');
+      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
       res.json(history);
     } catch (error) {
       console.error('❌ Error en endpoint /api/monthly-revenue/history:', error);
@@ -1128,6 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stack: error instanceof Error ? error.stack : 'No stack trace',
         error: error
       });
+      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history (ERROR) ===');
       res.status(500).json({ 
         message: "Error al obtener historial de ingresos",
         error: error instanceof Error ? error.message : 'Unknown error'
