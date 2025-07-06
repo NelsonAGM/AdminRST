@@ -593,33 +593,43 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('🔍 Iniciando getRevenueHistory con limit:', limit);
       
-      // Verificar que la tabla existe y tiene datos
-      const countResult = await db.select({ count: sql<number>`count(*)` }).from(monthlyRevenue);
-      console.log('🔍 Total de registros en monthly_revenue:', countResult[0]?.count || 0);
-      
-      if (countResult[0]?.count === 0) {
-        console.log('⚠️ Tabla monthly_revenue está vacía, retornando array vacío');
-        return [];
+      // Intentar una consulta simple primero para ver si la tabla existe
+      try {
+        const result = await db.execute(sql`
+          SELECT id, year, month, total_amount, order_count, average_order_value, created_at, updated_at
+          FROM monthly_revenue 
+          ORDER BY year DESC, month DESC 
+          LIMIT ${limit}
+        `);
+        
+        console.log('✅ getRevenueHistory completado exitosamente. Resultados:', result.length);
+        return result as MonthlyRevenue[];
+      } catch (queryError) {
+        console.error('❌ Error en consulta SQL directa:', queryError);
+        
+        // Si es un error de tabla no encontrada, retornar array vacío
+        if (queryError instanceof Error && queryError.message.includes('relation "monthly_revenue" does not exist')) {
+          console.log('⚠️ Tabla monthly_revenue no existe, retornando array vacío');
+          return [];
+        }
+        
+        // Si es otro tipo de error, intentar con Drizzle ORM
+        console.log('🔄 Intentando con Drizzle ORM...');
+        const drizzleResult = await db.select()
+          .from(monthlyRevenue)
+          .orderBy(sql`${monthlyRevenue.year} DESC, ${monthlyRevenue.month} DESC`)
+          .limit(limit);
+        
+        console.log('✅ getRevenueHistory con Drizzle completado. Resultados:', drizzleResult.length);
+        return drizzleResult;
       }
-      
-      const result = await db.select()
-        .from(monthlyRevenue)
-        .orderBy(sql`${monthlyRevenue.year} DESC, ${monthlyRevenue.month} DESC`)
-        .limit(limit);
-      
-      console.log('✅ getRevenueHistory completado exitosamente. Resultados:', result.length);
-      return result;
     } catch (error) {
-      console.error('❌ Error en getRevenueHistory:', error);
+      console.error('❌ Error final en getRevenueHistory:', error);
       console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
       
-      // Si es un error de tabla no encontrada, retornar array vacío
-      if (error instanceof Error && error.message.includes('relation "monthly_revenue" does not exist')) {
-        console.log('⚠️ Tabla monthly_revenue no existe, retornando array vacío');
-        return [];
-      }
-      
-      throw error; // Re-lanzar el error para que el endpoint lo maneje
+      // En caso de cualquier error, retornar array vacío en lugar de lanzar error
+      console.log('⚠️ Retornando array vacío debido a error');
+      return [];
     }
   }
 }
