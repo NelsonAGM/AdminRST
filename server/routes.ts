@@ -1114,6 +1114,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
     console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
+    console.log('🔍 Request headers:', req.headers);
+    console.log('🔍 Request user:', req.user);
+    
     try {
       console.log('📊 Endpoint /api/monthly-revenue/history iniciado');
       const limit = 12; // Default to last 12 months
