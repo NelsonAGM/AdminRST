@@ -1116,17 +1116,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
-    console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
-    res.json([]);
-    console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
-  });
-
   // Endpoint de prueba sin autenticación
   app.get("/api/test-history", async (req, res) => {
     console.log('🧪 === INICIO ENDPOINT DE PRUEBA /api/test-history ===');
     res.json({ message: "Endpoint de prueba funcionando" });
     console.log('🧪 === FIN ENDPOINT DE PRUEBA /api/test-history ===');
+  });
+
+  // Endpoint de prueba CON autenticación
+  app.get("/api/test-history-auth", ensureAuthenticated, async (req, res) => {
+    console.log('🔐 === INICIO ENDPOINT CON AUTH /api/test-history-auth ===');
+    res.json({ message: "Endpoint con auth funcionando" });
+    console.log('🔐 === FIN ENDPOINT CON AUTH /api/test-history-auth ===');
+  });
+
+  // Endpoint original sin autenticación temporalmente
+  app.get("/api/monthly-revenue/history", async (req, res) => {
+    console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
+    res.json([]);
+    console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
   });
   
   // Create HTTP server
