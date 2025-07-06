@@ -1130,17 +1130,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('🔐 === FIN ENDPOINT CON AUTH /api/test-history-auth ===');
   });
 
+  // Endpoint de diagnóstico para monthly_revenue
+  app.get("/api/debug/monthly-revenue", ensureAuthenticated, async (req, res) => {
+    try {
+      console.log('🔍 === INICIO DIAGNÓSTICO MONTHLY_REVENUE ===');
+      
+      // Verificar si la tabla existe
+      const { db } = await import('./db');
+      const { sql } = await import('drizzle-orm');
+      
+      // Intentar una consulta simple para ver si la tabla existe
+      const tableCheck = await db.execute(sql`SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'monthly_revenue'
+      )`);
+      
+      console.log('📋 Verificación de tabla:', tableCheck);
+      
+      // Si la tabla existe, intentar obtener datos
+      if (tableCheck[0]?.exists) {
+        const { monthlyRevenue } = await import('@shared/schema');
+        const data = await db.select().from(monthlyRevenue).limit(5);
+        console.log('📊 Datos encontrados:', data.length);
+        
+        res.json({
+          tableExists: true,
+          dataCount: data.length,
+          sampleData: data
+        });
+      } else {
+        res.json({
+          tableExists: false,
+          message: "La tabla monthly_revenue no existe"
+        });
+      }
+      
+      console.log('🔍 === FIN DIAGNÓSTICO MONTHLY_REVENUE ===');
+    } catch (error) {
+      console.error('❌ Error en diagnóstico:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+    }
+  });
+
   // Endpoint para obtener historial de ingresos
   app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
     try {
       console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
       const limit = parseInt(req.query.limit as string) || 12; // Por defecto últimos 12 meses
+      
+      // Agregar más logging para diagnóstico
+      console.log('🔍 Llamando a storage.getRevenueHistory con limit:', limit);
+      
       const history = await storage.getRevenueHistory(limit);
+      
+      console.log('✅ getRevenueHistory completado, resultados:', history.length);
       console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
+      
       res.json(history);
     } catch (error) {
       console.error('❌ Error en /api/monthly-revenue/history:', error);
-      res.status(500).json({ message: "Error al obtener historial de ingresos" });
+      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+      res.status(500).json({ 
+        message: "Error al obtener historial de ingresos",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
