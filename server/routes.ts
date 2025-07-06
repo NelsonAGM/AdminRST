@@ -1190,20 +1190,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
     try {
       console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
-      const limit = parseInt(req.query.limit as string) || 12; // Por defecto últimos 12 meses
+      const limit = 12; // Siempre 12 meses
       
-      // Agregar más logging para diagnóstico
-      console.log('🔍 Llamando a storage.getRevenueHistory con limit:', limit);
+      // Calcular los últimos 12 meses
+      const now = new Date();
+      const months: { year: number, month: number }[] = [];
+      for (let i = limit - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
+      }
       
-      const history = await storage.getRevenueHistory(limit);
+      // Obtener todos los registros de esos meses usando Drizzle 'or'
+      const { db } = await import('../server/db');
+      const { monthlyRevenue } = await import('@shared/schema');
+      const { or, and, eq } = await import('drizzle-orm');
+      const conditions = months.map(({ year, month }) => and(eq(monthlyRevenue.year, year), eq(monthlyRevenue.month, month)));
+      const records = await db.select().from(monthlyRevenue).where(or(...conditions));
       
-      console.log('✅ getRevenueHistory completado, resultados:', history.length);
-      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
+      // Armar el array final
+      const history = months.map(({ year, month }) => {
+        const found = records.find((r: any) => r.year === year && r.month === month);
+        if (found) return found;
+        return {
+          id: 0,
+          year,
+          month,
+          totalAmount: "0",
+          orderCount: 0,
+          averageOrderValue: "0",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      });
       
       res.json(history);
+      console.log('✅ Historial de ingresos generado:', history.length);
+      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
     } catch (error) {
       console.error('❌ Error en /api/monthly-revenue/history:', error);
-      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
       res.status(500).json({ 
         message: "Error al obtener historial de ingresos",
         error: error instanceof Error ? error.message : String(error)
