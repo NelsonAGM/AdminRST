@@ -1130,11 +1130,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('🔐 === FIN ENDPOINT CON AUTH /api/test-history-auth ===');
   });
 
-  // Endpoint original sin autenticación temporalmente
-  app.get("/api/monthly-revenue/history", async (req, res) => {
-    console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
-    res.json([]);
-    console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
+  // Endpoint para obtener historial de ingresos
+  app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
+    try {
+      console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
+      const limit = parseInt(req.query.limit as string) || 12; // Por defecto últimos 12 meses
+      const history = await storage.getRevenueHistory(limit);
+      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
+      res.json(history);
+    } catch (error) {
+      console.error('❌ Error en /api/monthly-revenue/history:', error);
+      res.status(500).json({ message: "Error al obtener historial de ingresos" });
+    }
   });
   
   // Create HTTP server
