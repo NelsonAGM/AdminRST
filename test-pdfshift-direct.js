@@ -1,7 +1,7 @@
 // Prueba directa de PDFShift
 const API_KEY = 'sk_3e1a2d725997e3567b006acfb655a9e7ab6876be';
 const API_URL = 'https://api.pdfshift.io/v3/convert/pdf';
-const IMG_URL = 'https://res.cloudinary.com/djms0pkvm/image/upload/v1751621278/servicedashboard/tg1e65aohsbgsdynwjtu.jpg';
+const IMG_URL = 'https://res.cloudinary.com/djms0pkvm/image/upload/v1751760297/servicedashboard/oidyl2skwv6amxpcitft.jpg';
 
 async function testPDFShiftDirect() {
   console.log('🧪 Prueba directa de PDFShift...');
@@ -14,19 +14,16 @@ async function testPDFShiftDirect() {
       <head>
         <title>Test PDF</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 40px; }
-          h1 { color: #333; }
-          .test { background: #f0f0f0; padding: 20px; border-radius: 5px; }
-          img { max-width: 300px; margin: 10px; border: 2px solid #888; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 2px 0 8px 0; background: #f8fafc; color: #222; }
+          .photos { display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 4px; background: #fff; justify-content: center; }
+          .photos img { max-width: 45%; max-height: 220px; height: auto; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 4px; background: #fff; padding: 1px; flex-shrink: 0; }
         </style>
       </head>
       <body>
-        <h1>Test PDFShift con Imágenes Cloudinary</h1>
-        <div class="test">
-          <p>Esta es una prueba directa de PDFShift con imágenes externas.</p>
-          <p>Fecha: ${new Date().toLocaleString()}</p>
-          <img src="${IMG_URL}" alt="Imagen Cloudinary 1" />
-          <img src="${IMG_URL}" alt="Imagen Cloudinary 2" />
+        <h1>Test PDFShift con Imágenes Verticales</h1>
+        <div class="photos">
+          <img src="${IMG_URL}" alt="Imagen Vertical 1" />
+          <img src="${IMG_URL}" alt="Imagen Vertical 2" />
         </div>
       </body>
     </html>
@@ -45,7 +42,7 @@ async function testPDFShiftDirect() {
       body: JSON.stringify({
         source: testHtml,
         format: 'A4',
-        margin: '20mm'
+        margin: '10mm'
       })
     });
 

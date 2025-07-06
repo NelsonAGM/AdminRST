@@ -591,13 +591,35 @@ export class DatabaseStorage implements IStorage {
   
   async getRevenueHistory(limit: number): Promise<MonthlyRevenue[]> {
     try {
-      return await db.select()
+      console.log('🔍 Iniciando getRevenueHistory con limit:', limit);
+      
+      // Verificar que la tabla existe y tiene datos
+      const countResult = await db.select({ count: sql<number>`count(*)` }).from(monthlyRevenue);
+      console.log('🔍 Total de registros en monthly_revenue:', countResult[0]?.count || 0);
+      
+      if (countResult[0]?.count === 0) {
+        console.log('⚠️ Tabla monthly_revenue está vacía, retornando array vacío');
+        return [];
+      }
+      
+      const result = await db.select()
         .from(monthlyRevenue)
         .orderBy(sql`${monthlyRevenue.year} DESC, ${monthlyRevenue.month} DESC`)
         .limit(limit);
+      
+      console.log('✅ getRevenueHistory completado exitosamente. Resultados:', result.length);
+      return result;
     } catch (error) {
-      console.error('Error en getRevenueHistory:', error);
-      return [];
+      console.error('❌ Error en getRevenueHistory:', error);
+      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+      
+      // Si es un error de tabla no encontrada, retornar array vacío
+      if (error instanceof Error && error.message.includes('relation "monthly_revenue" does not exist')) {
+        console.log('⚠️ Tabla monthly_revenue no existe, retornando array vacío');
+        return [];
+      }
+      
+      throw error; // Re-lanzar el error para que el endpoint lo maneje
     }
   }
 }
