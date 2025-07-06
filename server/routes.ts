@@ -1109,9 +1109,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/monthly-revenue/:year", ensureAuthenticated, async (req, res) => {
     try {
       const year = parseInt(req.params.year);
+      
+      // Validar que el año sea un número válido
+      if (isNaN(year) || year < 1900 || year > 2100) {
+        return res.status(400).json({ 
+          message: "Año inválido. Debe ser un número entre 1900 y 2100" 
+        });
+      }
+      
       const revenues = await storage.getMonthlyRevenuesByYear(year);
       res.json(revenues);
     } catch (error) {
+      console.error('❌ Error en /api/monthly-revenue/:year:', error);
       res.status(500).json({ message: "Error al obtener ingresos mensuales" });
     }
   });
@@ -1149,7 +1158,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📋 Verificación de tabla:', tableCheck);
       
       // Si la tabla existe, intentar obtener datos
-      if (tableCheck[0]?.exists) {
+      const tableExists = Array.isArray(tableCheck) && tableCheck.length > 0 && (tableCheck[0] as any)?.exists;
+      if (tableExists) {
         const { monthlyRevenue } = await import('@shared/schema');
         const data = await db.select().from(monthlyRevenue).limit(5);
         console.log('📊 Datos encontrados:', data.length);
