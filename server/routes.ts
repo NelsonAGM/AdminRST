@@ -1118,22 +1118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/monthly-revenue/history", ensureAuthenticated, async (req, res) => {
     console.log('🚀 === INICIO ENDPOINT /api/monthly-revenue/history ===');
-    
-    try {
-      console.log('📊 Endpoint /api/monthly-revenue/history iniciado');
-      
-      // Primero, probar una respuesta simple para ver si el endpoint funciona
-      console.log('📊 Enviando respuesta de prueba');
-      res.json([]);
-      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
-    } catch (error) {
-      console.error('❌ Error en endpoint /api/monthly-revenue/history:', error);
-      console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history (ERROR) ===');
-      res.status(500).json({ 
-        message: "Error al obtener historial de ingresos",
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+    res.json([]);
+    console.log('🚀 === FIN ENDPOINT /api/monthly-revenue/history ===');
   });
   
   // Create HTTP server
