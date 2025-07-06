@@ -1041,7 +1041,12 @@ export default function OrdersPage() {
       
       <DataTable 
         columns={columnsWithSelection} 
-        data={orders || []} 
+        data={(orders || []).slice().sort((a, b) => {
+          // Extraer el número real de la orden (asumiendo formato ORD-YYYY-NNNN)
+          const numA = parseInt((a.orderNumber || '').split('-').pop() || '0', 10);
+          const numB = parseInt((b.orderNumber || '').split('-').pop() || '0', 10);
+          return numA - numB;
+        })} 
         loading={isLoading}
         searchColumn="orderNumber"
         searchPlaceholder="Buscar por número de orden..."
